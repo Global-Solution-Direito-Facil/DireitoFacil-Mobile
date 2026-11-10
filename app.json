@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Direito Fácil",
+    "slug": "direitofacil-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "br.com.fiap.direitofacil",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Usamos a câmera para você fotografar o laudo, a receita ou um documento que decidir enviar.",
+        "NSPhotoLibraryUsageDescription": "Acessamos a galeria só para você escolher a foto de um documento."
+      }
+    },
+    "android": {
+      "package": "br.com.fiap.direitofacil",
+      "adaptiveIcon": {
+        "backgroundColor": "#1F4E8C",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["CAMERA", "READ_MEDIA_IMAGES"]
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Lexend_600SemiBold.ttf",
+            "./assets/fonts/Lexend_700Bold.ttf",
+            "./assets/fonts/AtkinsonHyperlegible_400Regular.ttf",
+            "./assets/fonts/AtkinsonHyperlegible_700Bold.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Usamos a câmera para você fotografar o laudo, a receita ou um documento que decidir enviar.",
+          "photosPermission": "Acessamos a galeria só para você escolher a foto de um documento."
+        }
+      ]
+    ]
+  }
+}
