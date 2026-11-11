@@ -657,7 +657,8 @@ export async function adaptadorMock(cfg: InternalAxiosRequestConfig): Promise<Ax
   const ehUpload = cfg.data != null && typeof cfg.data !== 'string';
   await esperar(ehUpload ? 1200 : 400 + Math.random() * 350);
 
-  const apiAlvo = cfg.baseURL === config.urlDotnet ? 'dotnet' : 'java';
+  // A .NET usa a URL dela mais o prefixo /api (ver API_DOTNET em client.ts).
+  const apiAlvo = cfg.baseURL?.startsWith(config.urlDotnet) ? 'dotnet' : 'java';
   const metodo = (cfg.method ?? 'get').toUpperCase();
   const caminho = (cfg.url ?? '').split('?')[0] ?? '';
   const autorizacao = String(cfg.headers.get('Authorization') ?? '');

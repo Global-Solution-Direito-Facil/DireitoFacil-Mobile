@@ -38,8 +38,14 @@ export const api: AxiosInstance = create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+/**
+ * Prefixo das rotas da API .NET (controllers em [Route("api/...")]).
+ * Se a API passar a versionar as rotas (ex.: /api/v1), muda so aqui.
+ */
+const PREFIXO_DOTNET = '/api';
+
 /** Opcao de requisicao para as rotas da API .NET. */
-export const API_DOTNET: AxiosRequestConfig = { baseURL: config.urlDotnet };
+export const API_DOTNET: AxiosRequestConfig = { baseURL: config.urlDotnet + PREFIXO_DOTNET };
 
 if (config.usarMock) {
   api.defaults.adapter = adaptadorMock;
