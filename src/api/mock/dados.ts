@@ -168,7 +168,7 @@ export const laudos: Laudo[] = [
   laudo(5, 'Rita Barbosa', 'M17.0', 'Gonartrose primária bilateral', 'OUTRA', '2026-07-21'),
 ];
 
-/** Os 15 direitos da tabela T_DF_DIREITO. */
+/** Os 20 direitos da tabela T_DF_DIREITO, todos com a base legal conferida (VERIFICADO). */
 export const direitos: Direito[] = [
   {
     id: 1,
@@ -217,7 +217,7 @@ export const direitos: Direito[] = [
     orgao: 'Receita Federal',
     baseLegal: 'Lei 8.989/1995',
     grupoAlvo: 'PCD',
-    prazoDias: 30,
+    prazoDias: 60,
     statusVerificacao: 'VERIFICADO',
   },
   {
@@ -227,7 +227,7 @@ export const direitos: Direito[] = [
     orgao: 'Receita Federal',
     baseLegal: 'Lei 8.383/1991, art. 72',
     grupoAlvo: 'PCD',
-    prazoDias: 30,
+    prazoDias: 60,
     statusVerificacao: 'VERIFICADO',
   },
   {
@@ -258,7 +258,7 @@ export const direitos: Direito[] = [
     baseLegal: 'Lei 14.601/2023',
     grupoAlvo: 'BAIXA_RENDA',
     prazoDias: 30,
-    statusVerificacao: 'CONFIRMAR',
+    statusVerificacao: 'VERIFICADO',
   },
   {
     id: 10,
@@ -278,7 +278,7 @@ export const direitos: Direito[] = [
     baseLegal: 'Lei 13.409/2016',
     grupoAlvo: 'PCD',
     prazoDias: 30,
-    statusVerificacao: 'CONFIRMAR',
+    statusVerificacao: 'VERIFICADO',
   },
   {
     id: 12,
@@ -318,7 +318,57 @@ export const direitos: Direito[] = [
     baseLegal: 'Lei 7.713/1988, art. 6º, XV',
     grupoAlvo: 'IDOSO',
     prazoDias: 30,
-    statusVerificacao: 'CONFIRMAR',
+    statusVerificacao: 'VERIFICADO',
+  },
+  {
+    id: 16,
+    codigo: 'PRIORIDADE_PCD',
+    nome: 'Atendimento prioritário para pessoa com deficiência',
+    orgao: 'Qualquer órgão público',
+    baseLegal: 'Lei 10.048/2000',
+    grupoAlvo: 'PCD',
+    prazoDias: 30,
+    statusVerificacao: 'VERIFICADO',
+  },
+  {
+    id: 17,
+    codigo: 'ACOMPANHANTE_ESCOLAR_TEA',
+    nome: 'Acompanhante especializado na escola',
+    orgao: 'Escola / rede de ensino',
+    baseLegal: 'Lei 12.764/2012, art. 3º, parágrafo único',
+    grupoAlvo: 'AUTISMO',
+    prazoDias: 30,
+    statusVerificacao: 'VERIFICADO',
+  },
+  {
+    id: 18,
+    codigo: 'MEIA_ENTRADA_PCD',
+    nome: 'Meia-entrada em eventos culturais e esportivos',
+    orgao: 'Organizador do evento',
+    baseLegal: 'Lei 12.933/2013, art. 1º, § 8º',
+    grupoAlvo: 'PCD',
+    prazoDias: 30,
+    statusVerificacao: 'VERIFICADO',
+  },
+  {
+    id: 19,
+    codigo: 'CREDENCIAL_IDOSO',
+    nome: 'Credencial de estacionamento para idoso',
+    orgao: 'Órgão de trânsito municipal',
+    baseLegal: 'Resolução CONTRAN 965/2022',
+    grupoAlvo: 'IDOSO',
+    prazoDias: 30,
+    statusVerificacao: 'VERIFICADO',
+  },
+  {
+    id: 20,
+    codigo: 'CREDENCIAL_PCD',
+    nome: 'Credencial de estacionamento para pessoa com deficiência',
+    orgao: 'Órgão de trânsito municipal',
+    baseLegal: 'Resolução CONTRAN 965/2022',
+    grupoAlvo: 'PCD',
+    prazoDias: 30,
+    statusVerificacao: 'VERIFICADO',
   },
 ];
 
@@ -357,6 +407,14 @@ const orientacoes: Record<string, { passos: string[]; fonte: string }> = {
     ],
     fonte: 'Lei 12.212/2010 · ANEEL',
   },
+  PASSE_IDOSO_INTERESTADUAL: {
+    passos: [
+      'Tenha em mãos um documento com foto e o comprovante de renda, ou a Carteira da Pessoa Idosa (emitida pelo CadÚnico).',
+      'Peça o bilhete gratuito na bilheteria da empresa de ônibus interestadual, com antecedência.',
+      'Se as vagas gratuitas do ônibus já acabaram, peça o desconto de pelo menos 50% na passagem.',
+    ],
+    fonte: 'Lei 10.741/2003, art. 40',
+  },
   PASSE_LIVRE_PCD: {
     passos: [
       'Separe documento com foto, CPF e o laudo (ou comprovante de BPC).',
@@ -367,65 +425,171 @@ const orientacoes: Record<string, { passos: string[]; fonte: string }> = {
   },
 };
 
-function dataMaisDias(dataIso: string, dias: number): string {
-  const d = new Date(`${dataIso}T12:00:00`);
-  d.setDate(d.getDate() + dias);
-  const mes = String(d.getMonth() + 1).padStart(2, '0');
-  const dia = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mes}-${dia}T23:59:00`;
-}
-
 type LinhaCaso = [
   pessoaId: number,
   codigo: string,
-  resultado: ResultadoElegibilidade,
   status: StatusCaso,
-  motivo?: string,
+  resultado: ResultadoElegibilidade,
+  motivo: string,
+  prazo: string,
+  atualizacao: string,
 ];
 
-/** 23 casos: a matriz de elegibilidade do banco. Marcos nao tem nenhum (teste negativo). */
+const SEM_LIMITE = 'Criterios atendidos (sem limite de renda)';
+
+/**
+ * Os 31 casos da demonstracao, iguais aos que o Oracle gera (PRC_ABRIR_CASOS,
+ * data de referencia 05/11/2026) e a carga do MongoDB: status, motivo e prazo.
+ * O motivo vem como a API devolve. Marcos nao tem nenhum (teste negativo).
+ */
 const linhas: LinhaCaso[] = [
-  [1, 'BPC_PCD', 'ELEGIVEL', 'DOCUMENTOS_PENDENTES'],
-  [1, 'PASSE_LIVRE_PCD', 'ELEGIVEL', 'ABERTO'],
-  [1, 'ISENCAO_IPI_VEICULO_PCD', 'ELEGIVEL', 'ABERTO'],
-  [1, 'CIPTEA', 'ELEGIVEL', 'PROTOCOLADO'],
-  [1, 'TARIFA_SOCIAL_ENERGIA', 'ELEGIVEL', 'CONCEDIDO'],
-  [1, 'CADUNICO', 'ELEGIVEL', 'ABERTO'],
-  [2, 'ISENCAO_IPI_VEICULO_PCD', 'ELEGIVEL', 'ABERTO'],
-  [2, 'ISENCAO_IOF_VEICULO_PCD', 'ELEGIVEL', 'ABERTO'],
-  [2, 'COTA_PCD_ENSINO_SUPERIOR', 'ELEGIVEL', 'ABERTO'],
-  [2, 'COTA_PCD_CONCURSO', 'ELEGIVEL', 'ABERTO'],
-  [2, 'COTA_PCD_EMPREGO', 'ELEGIVEL', 'ABERTO'],
-  [3, 'BPC_IDOSO', 'ELEGIVEL', 'EM_ANALISE'],
-  [3, 'PASSE_IDOSO_INTERESTADUAL', 'ELEGIVEL', 'ABERTO'],
-  [3, 'TARIFA_SOCIAL_ENERGIA', 'ELEGIVEL', 'ABERTO'],
-  [3, 'CADUNICO', 'ELEGIVEL', 'ABERTO'],
-  [3, 'PRIORIDADE_IDOSO', 'ELEGIVEL', 'ABERTO'],
-  [3, 'ISENCAO_IR_65MAIS', 'ELEGIVEL', 'ABERTO'],
+  [
+    1,
+    'BPC_PCD',
+    'DOCUMENTOS_PENDENTES',
+    'ELEGIVEL',
+    'Renda per capita 0.1851 SM dentro do limite de 0.2500 SM',
+    '2026-12-20',
+    '2026-11-07',
+  ],
+  [
+    1,
+    'PASSE_LIVRE_PCD',
+    'ABERTO',
+    'ELEGIVEL',
+    'Renda per capita 0.1851 SM dentro do limite de 1.0000 SM',
+    '2026-12-05',
+    '2026-11-05',
+  ],
+  [1, 'ISENCAO_IPI_VEICULO_PCD', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2027-01-04', '2026-11-05'],
+  [1, 'CIPTEA', 'CONCEDIDO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-08'],
+  [
+    1,
+    'TARIFA_SOCIAL_ENERGIA',
+    'ABERTO',
+    'ELEGIVEL',
+    'Renda per capita 0.1851 SM dentro do limite de 0.5000 SM',
+    '2026-12-05',
+    '2026-11-05',
+  ],
+  [
+    1,
+    'CADUNICO',
+    'ABERTO',
+    'ELEGIVEL',
+    'Renda per capita 0.1851 SM dentro do limite de 0.5000 SM',
+    '2026-12-05',
+    '2026-11-05',
+  ],
+  [1, 'PRIORIDADE_PCD', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [1, 'ACOMPANHANTE_ESCOLAR_TEA', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [1, 'MEIA_ENTRADA_PCD', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [2, 'ISENCAO_IPI_VEICULO_PCD', 'EM_ANALISE', 'ELEGIVEL', SEM_LIMITE, '2027-01-04', '2026-11-06'],
+  [2, 'ISENCAO_IOF_VEICULO_PCD', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2027-01-04', '2026-11-05'],
+  [2, 'COTA_PCD_ENSINO_SUPERIOR', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [2, 'COTA_PCD_CONCURSO', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [2, 'COTA_PCD_EMPREGO', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [2, 'PRIORIDADE_PCD', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [2, 'MEIA_ENTRADA_PCD', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [2, 'CREDENCIAL_PCD', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [
+    3,
+    'BPC_IDOSO',
+    'PROTOCOLADO',
+    'ELEGIVEL',
+    'Renda per capita 0.2313 SM dentro do limite de 0.2500 SM',
+    '2026-12-20',
+    '2026-11-06',
+  ],
+  [
+    3,
+    'PASSE_IDOSO_INTERESTADUAL',
+    'ABERTO',
+    'ELEGIVEL',
+    'Renda individual 0.4627 SM dentro do limite de 2.0000 SM',
+    '2026-12-05',
+    '2026-11-05',
+  ],
+  [
+    3,
+    'TARIFA_SOCIAL_ENERGIA',
+    'CONCEDIDO',
+    'ELEGIVEL',
+    'Renda per capita 0.2313 SM dentro do limite de 0.5000 SM',
+    '2026-12-05',
+    '2026-11-07',
+  ],
+  [
+    3,
+    'CADUNICO',
+    'ABERTO',
+    'ELEGIVEL',
+    'Renda per capita 0.2313 SM dentro do limite de 0.5000 SM',
+    '2026-12-05',
+    '2026-11-05',
+  ],
+  [3, 'PRIORIDADE_IDOSO', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [3, 'ISENCAO_IR_65MAIS', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [3, 'CREDENCIAL_IDOSO', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
   [
     5,
     'BPC_IDOSO',
+    'DOCUMENTOS_PENDENTES',
     'POSSIVEL',
-    'ABERTO',
-    'Renda por pessoa de 0,2795 salário mínimo, perto do limite de 0,25. Confirme a renda no CadÚnico.',
+    'Renda per capita 0.2795 SM proxima do limite de 0.2500 SM; confirmar renda no CadUnico',
+    '2026-12-20',
+    '2026-11-06',
   ],
-  [5, 'PASSE_IDOSO_INTERESTADUAL', 'ELEGIVEL', 'ABERTO'],
-  [5, 'TARIFA_SOCIAL_ENERGIA', 'ELEGIVEL', 'ABERTO'],
-  [5, 'CADUNICO', 'ELEGIVEL', 'ABERTO'],
-  [5, 'PRIORIDADE_IDOSO', 'ELEGIVEL', 'ABERTO'],
-  [5, 'ISENCAO_IR_65MAIS', 'ELEGIVEL', 'ABERTO'],
+  [
+    5,
+    'PASSE_IDOSO_INTERESTADUAL',
+    'ABERTO',
+    'ELEGIVEL',
+    'Renda individual 0.5589 SM dentro do limite de 2.0000 SM',
+    '2026-12-05',
+    '2026-11-05',
+  ],
+  [
+    5,
+    'TARIFA_SOCIAL_ENERGIA',
+    'ABERTO',
+    'ELEGIVEL',
+    'Renda per capita 0.2795 SM dentro do limite de 0.5000 SM',
+    '2026-12-05',
+    '2026-11-05',
+  ],
+  [
+    5,
+    'CADUNICO',
+    'NEGADO',
+    'ELEGIVEL',
+    'Renda per capita 0.2795 SM dentro do limite de 0.5000 SM',
+    '2026-12-05',
+    '2026-11-08',
+  ],
+  [5, 'PRIORIDADE_IDOSO', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [5, 'ISENCAO_IR_65MAIS', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
+  [5, 'CREDENCIAL_IDOSO', 'ABERTO', 'ELEGIVEL', SEM_LIMITE, '2026-12-05', '2026-11-05'],
 ];
 
 const ABERTURA = '2026-11-05';
 
-export const casos: Caso[] = linhas.map(([pessoaId, codigo, resultado, status, motivo], i) => {
-  const id = i + 1;
-  const pessoa = pessoas.find((p) => p.id === pessoaId)!;
+/** Monta o caso no formato do CasoResponse da API Java. */
+export function montarCaso(
+  id: number,
+  pessoa: { id: number; nome: string },
+  codigo: string,
+  status: StatusCaso,
+  resultado: ResultadoElegibilidade,
+  motivo: string,
+  prazo: string,
+  atualizacao: string,
+): Caso {
   const direito = direitos.find((d) => d.codigo === codigo)!;
   const orientacao = orientacoes[codigo];
   return {
     id,
-    pessoa: { id: pessoa.id, nome: pessoa.nome },
+    pessoa,
     direito: {
       id: direito.id,
       codigo: direito.codigo,
@@ -435,10 +599,10 @@ export const casos: Caso[] = linhas.map(([pessoaId, codigo, resultado, status, m
     },
     status,
     resultadoAvaliacao: resultado,
-    motivo: motivo ?? 'Atende aos critérios da regra.',
+    motivo,
     dataAbertura: `${ABERTURA}T10:00:00`,
-    dataPrazo: dataMaisDias(ABERTURA, direito.prazoDias),
-    dataAtualizacao: `${ABERTURA}T10:00:00`,
+    dataPrazo: `${prazo}T23:59:00`,
+    dataAtualizacao: `${atualizacao}T10:00:00`,
     orientacao: orientacao
       ? {
           id,
@@ -449,7 +613,23 @@ export const casos: Caso[] = linhas.map(([pessoaId, codigo, resultado, status, m
         }
       : null,
   };
-});
+}
+
+export const casos: Caso[] = linhas.map(
+  ([pessoaId, codigo, status, resultado, motivo, prazo, atualizacao], i) => {
+    const pessoa = pessoas.find((p) => p.id === pessoaId)!;
+    return montarCaso(
+      i + 1,
+      { id: pessoa.id, nome: pessoa.nome },
+      codigo,
+      status,
+      resultado,
+      motivo,
+      prazo,
+      atualizacao,
+    );
+  },
+);
 
 function documento(
   id: string,
@@ -515,12 +695,13 @@ export const envios: Envio[] = [
   },
   {
     id: 'env-0003',
-    codigoDireito: 'TARIFA_SOCIAL_ENERGIA',
+    codigoDireito: 'CADUNICO',
     donoEmail: 'paula.souza@email.com',
     donoNome: 'Paula Souza',
     pessoaNome: 'Helena Souza',
     status: 'DEVOLVIDO',
-    observacao: 'A conta de luz precisa ser dos últimos 3 meses. Envie uma conta mais recente.',
+    observacao:
+      'O comprovante de residência precisa ser dos últimos 3 meses. Envie uma conta mais recente.',
     documentos: [...(documentos['paula.souza@email.com'] ?? [])],
     dataCriacao: '2026-11-04T16:00:00',
     dataEnvio: '2026-11-04T16:05:00',
