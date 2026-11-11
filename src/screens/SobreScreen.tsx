@@ -16,7 +16,7 @@ import { espaco } from '../lib/tema';
 const EQUIPE = [
   { nome: 'Alexander Dennis Isidro Mamani', rm: 'RM565554' },
   { nome: 'Gabriel Neris Losano', rm: 'RM564093' },
-  { nome: 'João Vitor Biribilli Ravelli', rm: 'RM565594' },
+  { nome: 'João Vítor Biribilli Ravelli', rm: 'RM565594' },
   { nome: 'Kelson Zhang', rm: 'RM563748' },
   { nome: 'Pietro Paranhos Wilhelm', rm: 'RM561378' },
 ];

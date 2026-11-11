@@ -9,10 +9,13 @@
  * ---------------------------------------------------------------------------
  */
 
+import Constants from 'expo-constants';
+
 const FONTE = (process.env.EXPO_PUBLIC_DATA_SOURCE ?? 'mock').toLowerCase();
 const URL_JAVA = process.env.EXPO_PUBLIC_JAVA_API_URL ?? 'http://10.0.2.2:8080';
 const URL_DOTNET = process.env.EXPO_PUBLIC_DOTNET_API_URL ?? 'http://10.0.2.2:5000';
-const COMMIT = process.env.EXPO_PUBLIC_COMMIT_HASH ?? 'dev';
+/** Calculado pelo app.config.js na hora do build, a partir do git. */
+const COMMIT = String(Constants.expoConfig?.extra?.commitHash ?? 'desconhecido');
 
 if (__DEV__ && FONTE === 'mock') {
   console.warn(
