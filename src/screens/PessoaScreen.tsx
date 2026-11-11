@@ -68,6 +68,16 @@ export function PessoaScreen({ navigation, route }: Props) {
         <LinhaInfo rotulo="Renda da família" valor={formatarMoeda(p.rendaFamiliar)} />
         <LinhaInfo rotulo="Pessoas na casa" valor={String(p.qtdMembrosFamilia)} />
         <LinhaInfo rotulo="Renda por pessoa" valor={formatarMoeda(p.rendaPerCapita)} />
+        <LinhaInfo
+          rotulo="Renda da própria pessoa"
+          valor={
+            p.rendaIndividual === null
+              ? 'Não informada'
+              : p.rendaIndividual === 0
+                ? 'Sem renda'
+                : formatarMoeda(p.rendaIndividual)
+          }
+        />
         <View style={e.acoes}>
           <View style={e.flex}>
             <Botao

@@ -66,6 +66,25 @@ export function validarRenda(valor: string): string | null {
   return Number.isNaN(numero) || numero < 0 ? 'Valor inválido.' : null;
 }
 
+/**
+ * Renda da propria pessoa. So o valor em reais e conferido: "nao tenho renda"
+ * e "nao sei" sao respostas validas. Nao pode passar da renda da familia.
+ */
+export function validarRendaIndividual(
+  tipo: 'VALOR' | 'SEM_RENDA' | 'NAO_INFORMADA' | null,
+  valor: string,
+  rendaFamiliar: string,
+): string | null {
+  if (!tipo) return 'Escolha uma das opções.';
+  if (tipo !== 'VALOR') return null;
+  const numero = moedaParaNumero(valor);
+  if (Number.isNaN(numero) || numero <= 0) return 'Informe o valor, ou escolha "Não tenho renda".';
+  const familia = moedaParaNumero(rendaFamiliar);
+  if (!Number.isNaN(familia) && numero > familia)
+    return 'Não pode ser maior que a renda da família.';
+  return null;
+}
+
 export function validarMembros(valor: string): string | null {
   const n = Number(valor);
   if (!valor.trim()) return 'Informe quantas pessoas moram na casa.';

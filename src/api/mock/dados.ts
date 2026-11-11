@@ -92,6 +92,7 @@ export function montarPessoa(
   dataNascimento: string,
   rendaFamiliar: number,
   qtdMembrosFamilia: number,
+  rendaIndividual: number | null,
   dataCadastro = '2026-09-01T10:00:00',
 ): Pessoa {
   return {
@@ -102,6 +103,7 @@ export function montarPessoa(
     idade: idadeEm(dataNascimento),
     rendaFamiliar,
     qtdMembrosFamilia,
+    rendaIndividual,
     rendaPerCapita: Math.round((rendaFamiliar / qtdMembrosFamilia) * 100) / 100,
     dataCadastro,
   };
@@ -112,11 +114,11 @@ function usuario(id: number): UsuarioMock {
 }
 
 export const pessoas: Pessoa[] = [
-  montarPessoa(1, usuario(1), 'Lucas Almeida', '2019-03-14', 1200, 4),
-  montarPessoa(2, usuario(2), 'Carlos Menezes', '1985-07-22', 6500, 2),
-  montarPessoa(3, usuario(3), 'Helena Souza', '1958-01-30', 750, 2),
-  montarPessoa(4, usuario(4), 'Marcos Teixeira', '1991-05-10', 1500, 1),
-  montarPessoa(5, usuario(5), 'Rita Barbosa', '1960-03-02', 906, 2),
+  montarPessoa(1, usuario(1), 'Lucas Almeida', '2019-03-14', 1200, 4, 0),
+  montarPessoa(2, usuario(2), 'Carlos Menezes', '1985-07-22', 6500, 2, 4500),
+  montarPessoa(3, usuario(3), 'Helena Souza', '1958-01-30', 750, 2, 750),
+  montarPessoa(4, usuario(4), 'Marcos Teixeira', '1991-05-10', 1500, 1, 1500),
+  montarPessoa(5, usuario(5), 'Rita Barbosa', '1960-03-02', 906, 2, 906),
 ];
 
 function laudo(

@@ -23,7 +23,7 @@ export type CidadaoStackParamList = {
   Inicio: undefined;
   Pessoa: { id: number; nome: string };
   /** Sem `id`: cadastro. Com `id`: edicao. */
-  PessoaForm: { id?: number } | undefined;
+  PessoaForm: { id?: number; foco?: 'renda' } | undefined;
   MeusDireitos: undefined;
   /** O nome viaja junto so para o cabecalho aparecer certo antes de carregar. */
   Direito: { id: number; nome: string };

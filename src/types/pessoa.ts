@@ -7,6 +7,13 @@ export type DadosPessoa = {
   dataNascimento: string;
   rendaFamiliar: number;
   qtdMembrosFamilia: number;
+  /**
+   * Renda so da pessoa, por mes. Usada no passe de onibus do idoso, que olha a
+   * renda individual (ate 2 salarios minimos) e nao a da familia.
+   * 0 = nao tem renda. null = nao sabe ou prefere nao informar (o banco trata
+   * como POSSIVEL, nunca como zero).
+   */
+  rendaIndividual: number | null;
 };
 
 export type Pessoa = DadosPessoa & {

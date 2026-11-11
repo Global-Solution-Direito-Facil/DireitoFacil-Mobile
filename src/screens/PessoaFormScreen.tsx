@@ -8,6 +8,7 @@ import { Botao } from '../components/Botao';
 import { CampoTexto } from '../components/CampoTexto';
 import { EstadoCarregando } from '../components/EstadoCarregando';
 import { EstadoErro } from '../components/EstadoErro';
+import { Opcoes } from '../components/Opcoes';
 import { Tela } from '../components/Tela';
 import { Texto } from '../components/Texto';
 import { useSnackbar } from '../contexts/SnackbarContext';
@@ -20,7 +21,7 @@ import {
   mascaras,
   moedaParaNumero,
 } from '../lib/formatar';
-import { espaco } from '../lib/tema';
+import { cores, espaco, raio } from '../lib/tema';
 import {
   temErros,
   validar,
@@ -28,13 +29,41 @@ import {
   validarMembros,
   validarNome,
   validarRenda,
+  validarRendaIndividual,
 } from '../lib/validacao';
 import { CidadaoStackParamList } from '../navigation/tipos';
 
 type Props = NativeStackScreenProps<CidadaoStackParamList, 'PessoaForm'>;
-type Campo = 'nome' | 'dataNascimento' | 'renda' | 'membros';
+type Campo = 'nome' | 'dataNascimento' | 'renda' | 'membros' | 'rendaIndividual';
 
-const VAZIO: Record<Campo, string> = { nome: '', dataNascimento: '', renda: '', membros: '' };
+/**
+ * Renda da propria pessoa: tres respostas, porque "nao tenho renda" e "nao sei"
+ * sao coisas diferentes. A primeira manda 0; a segunda manda null (nunca 0),
+ * e o banco trata como POSSIVEL em vez de negar.
+ */
+type TipoRenda = 'VALOR' | 'SEM_RENDA' | 'NAO_INFORMADA';
+
+const OPCOES_RENDA: { valor: TipoRenda; texto: string }[] = [
+  { valor: 'VALOR', texto: 'Informar valor' },
+  { valor: 'SEM_RENDA', texto: 'Não tenho renda' },
+  { valor: 'NAO_INFORMADA', texto: 'Não sei / prefiro não informar' },
+];
+
+type Valores = Record<Campo, string> & { tipoRenda: TipoRenda | null };
+
+const VAZIO: Valores = {
+  nome: '',
+  dataNascimento: '',
+  renda: '',
+  membros: '',
+  rendaIndividual: '',
+  tipoRenda: null,
+};
+
+function tipoDaRenda(rendaIndividual: number | null): TipoRenda {
+  if (rendaIndividual === null) return 'NAO_INFORMADA';
+  return rendaIndividual === 0 ? 'SEM_RENDA' : 'VALOR';
+}
 
 /**
  * Na edicao, primeiro carrega a pessoa e SO DEPOIS monta o formulario, ja com
@@ -43,6 +72,7 @@ const VAZIO: Record<Campo, string> = { nome: '', dataNascimento: '', renda: '', 
  */
 export function PessoaFormScreen({ navigation, route }: Props) {
   const id = route.params?.id;
+  const completarRenda = route.params?.foco === 'renda';
   const atual = usePessoa(id);
   const aoTerminar = () => navigation.goBack();
 
@@ -61,18 +91,27 @@ export function PessoaFormScreen({ navigation, route }: Props) {
         dataNascimento: formatarData(atual.data.dataNascimento),
         renda: formatarMoeda(atual.data.rendaFamiliar),
         membros: String(atual.data.qtdMembrosFamilia),
+        rendaIndividual: atual.data.rendaIndividual
+          ? formatarMoeda(atual.data.rendaIndividual)
+          : '',
+        tipoRenda: tipoDaRenda(atual.data.rendaIndividual),
       }}
+      completarRenda={completarRenda}
+      nome={atual.data.nome}
     />
   );
 }
 
 type PropsFormulario = {
   id?: number;
-  valoresIniciais: Record<Campo, string>;
+  valoresIniciais: Valores;
   aoTerminar: () => void;
+  /** Veio do botao "Completar informacao" de um direito POSSIVEL. */
+  completarRenda?: boolean;
+  nome?: string;
 };
 
-function Formulario({ id, valoresIniciais, aoTerminar }: PropsFormulario) {
+function Formulario({ id, valoresIniciais, aoTerminar, completarRenda, nome }: PropsFormulario) {
   const editando = id !== undefined;
   const salvar = useSalvarPessoa();
   const { mostrar } = useSnackbar();
@@ -87,6 +126,8 @@ function Formulario({ id, valoresIniciais, aoTerminar }: PropsFormulario) {
       dataNascimento: () => validarDataNascimento(form.dataNascimento),
       renda: () => validarRenda(form.renda),
       membros: () => validarMembros(form.membros),
+      rendaIndividual: () =>
+        validarRendaIndividual(form.tipoRenda, form.rendaIndividual, form.renda),
     });
     setErros(encontrados);
     if (temErros(encontrados)) return;
@@ -99,6 +140,12 @@ function Formulario({ id, valoresIniciais, aoTerminar }: PropsFormulario) {
           dataNascimento: dataBrParaIso(form.dataNascimento) ?? '',
           rendaFamiliar: moedaParaNumero(form.renda),
           qtdMembrosFamilia: Number(form.membros),
+          rendaIndividual:
+            form.tipoRenda === 'VALOR'
+              ? moedaParaNumero(form.rendaIndividual)
+              : form.tipoRenda === 'SEM_RENDA'
+                ? 0
+                : null,
         },
       },
       {
@@ -124,6 +171,12 @@ function Formulario({ id, valoresIniciais, aoTerminar }: PropsFormulario) {
         A renda e o número de pessoas na casa são usados pela regra oficial para conferir os
         direitos que têm limite de renda.
       </Texto>
+      {completarRenda ? (
+        <Aviso
+          tipo="info"
+          texto={`Complete a renda de ${nome ?? 'a pessoa'} para a regra conferir o direito de novo.`}
+        />
+      ) : null}
       {salvar.isError ? <Aviso tipo="perigo" texto={mensagemDoErro(salvar.error)} /> : null}
       <View style={e.formulario}>
         <CampoTexto
@@ -157,6 +210,28 @@ function Formulario({ id, valoresIniciais, aoTerminar }: PropsFormulario) {
           erro={erros.membros}
           keyboardType="number-pad"
         />
+        <View style={[e.bloco, completarRenda && e.blocoDestacado]}>
+          <Opcoes
+            rotulo="Renda da própria pessoa por mês"
+            opcoes={OPCOES_RENDA}
+            selecionada={form.tipoRenda}
+            aoEscolher={(tipoRenda) => setForm((f) => ({ ...f, tipoRenda }))}
+            erro={form.tipoRenda === 'VALOR' ? null : erros.rendaIndividual}
+          />
+          <Texto variante="pequeno" cor="textoFraco">
+            Usamos para ver se você tem direito ao passe de ônibus para idosos.
+          </Texto>
+          {form.tipoRenda === 'VALOR' ? (
+            <CampoTexto
+              rotulo="Valor que a pessoa recebe"
+              value={form.rendaIndividual}
+              onChangeText={(v) => mudar('rendaIndividual')(mascaras.moeda(v))}
+              erro={erros.rendaIndividual}
+              keyboardType="number-pad"
+              placeholder="R$ 0,00"
+            />
+          ) : null}
+        </View>
       </View>
     </Tela>
   );
@@ -164,4 +239,10 @@ function Formulario({ id, valoresIniciais, aoTerminar }: PropsFormulario) {
 
 const e = StyleSheet.create({
   formulario: { gap: espaco.lg },
+  bloco: { gap: espaco.sm },
+  blocoDestacado: {
+    padding: espaco.md,
+    borderRadius: raio.md,
+    backgroundColor: cores.primariaClara,
+  },
 });

@@ -18,6 +18,7 @@ import { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { config } from '../../config/env';
 import { criarJwtDemonstracao, lerJwt } from '../../lib/jwt';
 import type { Documento, Envio } from '../../types/documento';
+import type { Pessoa } from '../../types/pessoa';
 import type { Medicamento } from '../../types/receita';
 import * as dados from './dados';
 import type { UsuarioMock } from './dados';
@@ -97,6 +98,69 @@ function envioVisivel(u: UsuarioMock, id: string): Envio {
     throw new ErroHttp(403, 'Você não tem permissão para isso.');
   }
   return envio;
+}
+
+/** Salario minimo usado pela carga do banco (2026). */
+const SALARIO_MINIMO = 1621;
+
+/** "Nao sei" chega como null e continua null: nunca vira zero. */
+function lerRendaIndividual(valor: unknown): number | null {
+  if (valor === null || valor === undefined || valor === '') return null;
+  return Number(valor);
+}
+
+function validarRendaIndividual(rendaIndividual: number | null, rendaFamiliar: number) {
+  if (rendaIndividual !== null && rendaIndividual > rendaFamiliar) {
+    throw new ErroHttp(400, 'A renda da pessoa não pode ser maior que a renda da família.', {
+      rendaIndividual: 'Maior que a renda da família.',
+    });
+  }
+}
+
+/**
+ * Regra do passe do idoso (Lei 10.741/2003, art. 40), como no banco: 60+ com
+ * renda INDIVIDUAL de ate 2 salarios minimos. Renda nao informada fica
+ * POSSIVEL (o V6 do banco vai tratar assim). Acima do limite, o caso sai.
+ */
+function reavaliarPasseIdoso(pessoa: Pessoa) {
+  const CODIGO = 'PASSE_IDOSO_INTERESTADUAL';
+  if (pessoa.idade < 60) return;
+  const existente = db.casos.find((c) => c.pessoa.id === pessoa.id && c.direito.codigo === CODIGO);
+
+  let resultado: 'ELEGIVEL' | 'POSSIVEL' | null;
+  let motivo: string;
+  if (pessoa.rendaIndividual === null) {
+    resultado = 'POSSIVEL';
+    motivo = 'Renda individual nao informada; informe a renda para confirmar o passe do idoso';
+  } else {
+    const emSalarios = pessoa.rendaIndividual / SALARIO_MINIMO;
+    resultado = emSalarios <= 2 ? 'ELEGIVEL' : null;
+    motivo = `Renda individual ${emSalarios.toFixed(4)} SM ${resultado ? 'dentro do' : 'acima do'} limite de 2.0000 SM`;
+  }
+
+  if (!resultado) {
+    db.casos = db.casos.filter((c) => c !== existente);
+    return;
+  }
+  if (existente) {
+    existente.resultadoAvaliacao = resultado;
+    existente.motivo = motivo;
+    existente.dataAtualizacao = new Date().toISOString();
+    return;
+  }
+  const hoje = new Date().toISOString().slice(0, 10);
+  db.casos.push(
+    dados.montarCaso(
+      ++db.sequencia,
+      { id: pessoa.id, nome: pessoa.nome },
+      CODIGO,
+      'ABERTO',
+      resultado,
+      motivo,
+      hoje,
+      hoje,
+    ),
+  );
 }
 
 function pagina<T>(lista: T[]) {
@@ -211,6 +275,8 @@ const rotas: Rota[] = [
     padrao: /^\/pessoas$/,
     tratar: ({ usuario, corpo }) => {
       const u = usuario();
+      const rendaIndividual = lerRendaIndividual(corpo.rendaIndividual);
+      validarRendaIndividual(rendaIndividual, Number(corpo.rendaFamiliar));
       const pessoa = dados.montarPessoa(
         ++db.sequencia,
         u,
@@ -218,9 +284,11 @@ const rotas: Rota[] = [
         String(corpo.dataNascimento),
         Number(corpo.rendaFamiliar),
         Number(corpo.qtdMembrosFamilia),
+        rendaIndividual,
         new Date().toISOString(),
       );
       db.pessoas.push(pessoa);
+      reavaliarPasseIdoso(pessoa);
       return { status: 201, data: pessoa };
     },
   },
@@ -231,6 +299,8 @@ const rotas: Rota[] = [
     tratar: ({ usuario, params, corpo }) => {
       const atual = pessoaVisivel(usuario(), Number(params[0]));
       const responsavel = db.usuarios.find((x) => x.id === atual.responsavel.id)!;
+      const rendaIndividual = lerRendaIndividual(corpo.rendaIndividual);
+      validarRendaIndividual(rendaIndividual, Number(corpo.rendaFamiliar));
       const atualizada = dados.montarPessoa(
         atual.id,
         responsavel,
@@ -238,12 +308,14 @@ const rotas: Rota[] = [
         String(corpo.dataNascimento),
         Number(corpo.rendaFamiliar),
         Number(corpo.qtdMembrosFamilia),
+        rendaIndividual,
         atual.dataCadastro,
       );
       db.pessoas = db.pessoas.map((p) => (p.id === atual.id ? atualizada : p));
       db.casos = db.casos.map((c) =>
         c.pessoa.id === atual.id ? { ...c, pessoa: { id: atual.id, nome: atualizada.nome } } : c,
       );
+      reavaliarPasseIdoso(atualizada);
       return { data: atualizada };
     },
   },
