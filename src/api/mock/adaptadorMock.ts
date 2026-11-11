@@ -19,7 +19,7 @@ import { config } from '../../config/env';
 import { criarJwtDemonstracao, lerJwt } from '../../lib/jwt';
 import type { Documento, Envio } from '../../types/documento';
 import type { Pessoa } from '../../types/pessoa';
-import type { Medicamento } from '../../types/receita';
+import type { ResultadoFarmacia } from '../../types/receita';
 import * as dados from './dados';
 import type { UsuarioMock } from './dados';
 
@@ -99,6 +99,52 @@ function envioVisivel(u: UsuarioMock, id: string): Envio {
   }
   return envio;
 }
+
+// ---- Farmacia Popular (mesma regra de PKG_FARMACIA_POPULAR.P_AVALIAR) -------
+
+type ItemReceita = {
+  nomeLido: string;
+  nome: string;
+  principioAtivo: string;
+  concentracao: string;
+  corrigido: 'S' | 'N';
+};
+
+/** Minusculas, sem acento, sem espacos repetidos; virgula e ponto valem igual na dosagem. */
+function normalizar(texto: string): string {
+  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function normalizarDosagem(texto: string): string {
+  return normalizar(texto).replace(/\s/g, '').replace(/\./g, ',');
+}
+
+/**
+ * O principio digitado precisa estar contido no nome do elenco ("metformina"
+ * acha "cloridrato de metformina"). Achou o principio com outra dosagem:
+ * DOSAGEM_DIVERGENTE. A tabela decide; nada aqui sugere trocar de remedio.
+ */
+function avaliarNoElenco(principio: string, concentracao: string): ResultadoFarmacia {
+  const p = normalizar(principio);
+  const c = normalizarDosagem(concentracao);
+  if (p.length < 4) return 'NAO_ENCONTRADO';
+  const doPrincipio = dados.elencoFarmaciaPopular.filter((m) =>
+    normalizar(m.principioAtivo).includes(p),
+  );
+  if (doPrincipio.length === 0) return 'NAO_ENCONTRADO';
+  return doPrincipio.some((m) => normalizarDosagem(m.concentracao) === c)
+    ? 'GRATUITO'
+    : 'DOSAGEM_DIVERGENTE';
+}
+
+const ORIENTACAO_FARMACIA: Record<ResultadoFarmacia, string> = {
+  GRATUITO:
+    'Gratuito no Farmácia Popular. Leve a receita válida e um documento oficial com foto e CPF a uma farmácia credenciada (selo "Aqui tem Farmácia Popular").',
+  DOSAGEM_DIVERGENTE:
+    'O princípio ativo está no elenco, mas a dosagem da receita não. Confirme na farmácia credenciada. Não troque o remédio por conta própria.',
+  NAO_ENCONTRADO:
+    'Não consta no elenco gratuito do Farmácia Popular. Pergunte na farmácia ou na unidade de saúde.',
+};
 
 /** Salario minimo usado pela carga do banco (2026). */
 const SALARIO_MINIMO = 1621;
@@ -390,22 +436,12 @@ const rotas: Rota[] = [
     padrao: /^\/receitas\/consulta$/,
     tratar: ({ usuario, corpo }) => {
       usuario();
-      const normalizar = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
-      const lista = (corpo.medicamentos ?? []) as Medicamento[];
+      const itens = (corpo.itens ?? []) as ItemReceita[];
+      if (itens.length === 0) throw new ErroHttp(400, 'Confira pelo menos um remédio.');
       return {
-        data: lista.map((m) => {
-          const gratuito = dados.farmaciaPopular.some(
-            (item) =>
-              normalizar(item.principioAtivo) === normalizar(m.principioAtivo) &&
-              normalizar(item.dosagem) === normalizar(m.dosagem),
-          );
-          return {
-            ...m,
-            gratuito,
-            observacao: gratuito
-              ? 'Disponível de graça. Leve a receita válida, um documento com foto e o CPF a uma farmácia credenciada.'
-              : 'Não está na lista do programa. Confirme na farmácia credenciada.',
-          };
+        data: itens.map((item) => {
+          const resultado = avaliarNoElenco(item.principioAtivo, item.concentracao);
+          return { ...item, resultado, orientacao: ORIENTACAO_FARMACIA[resultado] };
         }),
       };
     },

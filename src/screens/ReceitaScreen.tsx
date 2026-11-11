@@ -2,11 +2,16 @@
  * ---------------------------------------------------------------------------
  * MINHA RECEITA
  * ---------------------------------------------------------------------------
- *   foto -> leitura pela IA -> a PESSOA confere e corrige -> lista oficial
+ *   foto -> leitura pela IA -> a PESSOA confere e corrige -> elenco oficial
  *
  * A conferencia no meio e obrigatoria: a leitura erra em letra de mao e em
- * nome comercial. O app nunca sugere trocar remedio ou dosagem; sempre
- * orienta a confirmar na farmacia.
+ * nome comercial. O app guarda o que a IA leu e avisa o banco se a pessoa
+ * corrigiu (corrigido = S/N). A dosagem nao tem formato rigido: o banco
+ * normaliza espacos, ponto e virgula.
+ *
+ * O resultado tem tres estados (gratuito, dosagem diferente, fora do elenco)
+ * e a orientacao do banco. O app nunca sugere trocar de remedio ou de
+ * dosagem, e sempre manda confirmar na farmacia credenciada.
  * ---------------------------------------------------------------------------
  */
 import { useRef, useState } from 'react';
@@ -18,6 +23,7 @@ import { CampoTexto } from '../components/CampoTexto';
 import { Cartao } from '../components/Cartao';
 import { ConsentimentoLgpd } from '../components/ConsentimentoLgpd';
 import { EstadoCarregando } from '../components/EstadoCarregando';
+import { ItemDeLista } from '../components/ItemDeLista';
 import { SeletorImagem } from '../components/SeletorImagem';
 import { Selo } from '../components/Selo';
 import { Tela } from '../components/Tela';
@@ -26,17 +32,40 @@ import { mensagemDoErro } from '../errors/AppError';
 import { useConsultarFarmaciaPopular, useLerReceita } from '../hooks/useReceita';
 import { novaChaveIdempotencia } from '../lib/confirmar';
 import { Origem, escolherImagem } from '../lib/imagem';
+import { Rotulo } from '../lib/rotulos';
 import { espaco } from '../lib/tema';
 import { ArquivoLocal } from '../types/documento';
-import { Medicamento } from '../types/receita';
+import { Medicamento, RemedioConferido, ResultadoFarmacia } from '../types/receita';
 
 type Etapa = 'foto' | 'conferir' | 'resultado';
+
+/** Cada remedio na tela: o que a IA leu (fixo) e o que a pessoa confirmou (editavel). */
+type Linha = { lido: Medicamento | null; atual: Medicamento };
+
+const SELO_RESULTADO: Record<ResultadoFarmacia, Rotulo> = {
+  GRATUITO: { texto: 'De graça', cor: 'sucesso', fundo: 'sucessoClaro' },
+  DOSAGEM_DIVERGENTE: { texto: 'Dosagem diferente da lista', cor: 'alerta', fundo: 'alertaClaro' },
+  NAO_ENCONTRADO: { texto: 'Fora da lista', cor: 'textoFraco', fundo: 'fundo' },
+};
+
+const comparar = (texto: string) => texto.trim().toLowerCase().replace(/\s+/g, ' ');
+
+/** A pessoa mudou alguma coisa do que a IA leu? Remedio incluido a mao conta como corrigido. */
+function foiCorrigido({ lido, atual }: Linha): boolean {
+  if (!lido) return true;
+  return (
+    comparar(lido.nome) !== comparar(atual.nome) ||
+    comparar(lido.principioAtivo) !== comparar(atual.principioAtivo) ||
+    comparar(lido.dosagem) !== comparar(atual.dosagem)
+  );
+}
 
 export function ReceitaScreen() {
   const [etapa, setEtapa] = useState<Etapa>('foto');
   const [arquivo, setArquivo] = useState<ArquivoLocal | null>(null);
   const [consentimento, setConsentimento] = useState(false);
-  const [remedios, setRemedios] = useState<Medicamento[]>([]);
+  const [linhas, setLinhas] = useState<Linha[]>([]);
+  const [documentoId, setDocumentoId] = useState<string | null>(null);
   const [erros, setErros] = useState<{ arquivo?: string; consentimento?: string; lista?: string }>(
     {},
   );
@@ -69,8 +98,9 @@ export function ReceitaScreen() {
     ler.mutate(
       { arquivo, chave: chave.current },
       {
-        onSuccess: (lidos) => {
-          setRemedios(lidos);
+        onSuccess: (lida) => {
+          setDocumentoId(lida.documentoId);
+          setLinhas(lida.medicamentos.map((m) => ({ lido: m, atual: { ...m } })));
           setEtapa('conferir');
         },
       },
@@ -78,20 +108,26 @@ export function ReceitaScreen() {
   }
 
   function aoConsultar() {
-    const validos = remedios.filter((r) => r.principioAtivo.trim() && r.dosagem.trim());
-    if (validos.length === 0) {
-      setErros({ lista: 'Preencha o princípio ativo e a dosagem de pelo menos um remédio.' });
+    const preenchidas = linhas.filter((l) => l.atual.principioAtivo.trim());
+    if (preenchidas.length === 0 || !documentoId) {
+      setErros({ lista: 'Preencha o nome ou o princípio ativo de pelo menos um remédio.' });
       return;
     }
     setErros({});
-    consultar.mutate(validos, { onSuccess: () => setEtapa('resultado') });
+    const remedios: RemedioConferido[] = preenchidas.map((l) => ({
+      ...l.atual,
+      nomeLido: l.lido?.nome ?? '',
+      corrigido: foiCorrigido(l),
+    }));
+    consultar.mutate({ documentoId, remedios }, { onSuccess: () => setEtapa('resultado') });
   }
 
   function recomecar() {
     setEtapa('foto');
     setArquivo(null);
     setConsentimento(false);
-    setRemedios([]);
+    setLinhas([]);
+    setDocumentoId(null);
     setErros({});
     ler.reset();
     consultar.reset();
@@ -99,7 +135,9 @@ export function ReceitaScreen() {
   }
 
   const editar = (i: number, campo: keyof Medicamento) => (valor: string) =>
-    setRemedios((lista) => lista.map((r, j) => (j === i ? { ...r, [campo]: valor } : r)));
+    setLinhas((lista) =>
+      lista.map((l, j) => (j === i ? { ...l, atual: { ...l.atual, [campo]: valor } } : l)),
+    );
 
   if (ler.isPending) return <EstadoCarregando mensagem="Lendo a receita..." />;
   if (consultar.isPending) return <EstadoCarregando mensagem="Consultando a Farmácia Popular..." />;
@@ -115,26 +153,46 @@ export function ReceitaScreen() {
         />
         {erros.lista ? <Aviso tipo="perigo" texto={erros.lista} /> : null}
         {consultar.isError ? <Aviso tipo="perigo" texto={mensagemDoErro(consultar.error)} /> : null}
-        {remedios.map((r, i) => (
+        {linhas.map((linha, i) => (
           <Cartao key={i}>
-            <Texto variante="h3">Remédio {i + 1}</Texto>
-            <CampoTexto rotulo="Nome na receita" value={r.nome} onChangeText={editar(i, 'nome')} />
+            <View style={e.titulo}>
+              <Texto variante="h3">Remédio {i + 1}</Texto>
+              {foiCorrigido(linha) ? (
+                <Selo texto="Corrigido por você" cor="info" fundo="infoClaro" />
+              ) : null}
+            </View>
+            {linha.lido ? (
+              <Texto variante="pequeno" cor="textoFraco">
+                Lido na receita: {linha.lido.nome} · {linha.lido.principioAtivo} ·{' '}
+                {linha.lido.dosagem}
+              </Texto>
+            ) : null}
+            <CampoTexto
+              rotulo="Nome do remédio"
+              value={linha.atual.nome}
+              onChangeText={editar(i, 'nome')}
+              placeholder="ex.: Losartana"
+            />
             <CampoTexto
               rotulo="Princípio ativo"
-              value={r.principioAtivo}
+              dica="O nome da substância, que vem embaixo do nome comercial."
+              value={linha.atual.principioAtivo}
               onChangeText={editar(i, 'principioAtivo')}
+              placeholder="ex.: losartana potássica"
+              autoCapitalize="none"
             />
             <CampoTexto
               rotulo="Dosagem"
-              value={r.dosagem}
+              value={linha.atual.dosagem}
               onChangeText={editar(i, 'dosagem')}
-              placeholder="ex.: 50 mg"
+              placeholder="50 mg"
+              autoCapitalize="none"
             />
             <Botao
               titulo="Remover"
               icone="close"
               variante="discreto"
-              aoTocar={() => setRemedios((lista) => lista.filter((_, j) => j !== i))}
+              aoTocar={() => setLinhas((lista) => lista.filter((_, j) => j !== i))}
             />
           </Cartao>
         ))}
@@ -143,7 +201,10 @@ export function ReceitaScreen() {
           icone="plus"
           variante="secundario"
           aoTocar={() =>
-            setRemedios((lista) => [...lista, { nome: '', principioAtivo: '', dosagem: '' }])
+            setLinhas((lista) => [
+              ...lista,
+              { lido: null, atual: { nome: '', principioAtivo: '', dosagem: '' } },
+            ])
           }
         />
       </Tela>
@@ -152,26 +213,39 @@ export function ReceitaScreen() {
 
   // ---- 3. Resultado -------------------------------------------------------------
   if (etapa === 'resultado') {
+    const resultados = consultar.data ?? [];
+    const gratuitos = resultados.filter((r) => r.resultado === 'GRATUITO').length;
     return (
       <Tela rodape={<Botao titulo="Nova receita" variante="secundario" aoTocar={recomecar} />}>
         <Texto variante="h2">Resultado</Texto>
-        {(consultar.data ?? []).map((r, i) => (
-          <Cartao key={i}>
-            <Texto variante="h3">{r.nome || r.principioAtivo}</Texto>
-            <Texto cor="textoFraco">
-              {r.principioAtivo} · {r.dosagem}
-            </Texto>
-            <Selo
-              texto={r.gratuito ? 'De graça' : 'Fora da lista'}
-              cor={r.gratuito ? 'sucesso' : 'textoFraco'}
-              fundo={r.gratuito ? 'sucessoClaro' : 'fundo'}
-            />
-            <Texto>{r.observacao}</Texto>
-          </Cartao>
+        <Texto cor="textoFraco">
+          {gratuitos} de {resultados.length}{' '}
+          {resultados.length === 1 ? 'remédio está' : 'remédios estão'} na lista gratuita.
+        </Texto>
+        {resultados.map((r, i) => (
+          <ItemDeLista key={i} indice={i}>
+            <Cartao>
+              <Selo {...SELO_RESULTADO[r.resultado]} />
+              <Texto variante="h3">{r.nome || r.principioAtivo}</Texto>
+              <Texto cor="textoFraco">
+                {r.principioAtivo} · {r.dosagem || 'dosagem não informada'}
+              </Texto>
+              <Texto>{r.orientacao}</Texto>
+              {r.corrigido ? (
+                <Texto variante="pequeno" cor="textoFraco">
+                  Você corrigiu a leitura deste remédio.
+                </Texto>
+              ) : null}
+            </Cartao>
+          </ItemDeLista>
         ))}
         <Aviso
           tipo="info"
-          texto="Leve a receita válida, um documento com foto e o CPF a uma farmácia credenciada. Não troque de remédio nem de dosagem sem falar com o médico."
+          texto={
+            'Confirme sempre na farmácia credenciada (selo "Aqui tem Farmácia Popular"). ' +
+            'Leve a receita válida e um documento oficial com foto e CPF. ' +
+            'Não troque de remédio nem de dosagem sem falar com o médico.'
+          }
         />
       </Tela>
     );
@@ -183,8 +257,8 @@ export function ReceitaScreen() {
       <View style={e.topo}>
         <Texto variante="h2">Remédio de graça na Farmácia Popular</Texto>
         <Texto cor="textoFraco">
-          Fotografe a receita. Mostramos quais remédios estão na lista do programa e o que levar na
-          farmácia.
+          Fotografe a receita. Você confere a leitura, e mostramos quais remédios estão na lista
+          oficial do programa e o que levar na farmácia.
         </Texto>
       </View>
       {ler.isError ? <Aviso tipo="perigo" texto={mensagemDoErro(ler.error)} /> : null}
@@ -201,4 +275,5 @@ export function ReceitaScreen() {
 
 const e = StyleSheet.create({
   topo: { gap: espaco.sm },
+  titulo: { flexDirection: 'row', alignItems: 'center', gap: espaco.sm, flexWrap: 'wrap' },
 });

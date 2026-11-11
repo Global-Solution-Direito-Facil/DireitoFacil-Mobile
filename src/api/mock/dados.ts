@@ -710,21 +710,62 @@ export const envios: Envio[] = [
   },
 ];
 
-/** Lista de demonstracao da Farmacia Popular (a oficial fica na tabela T_DF_MEDICAMENTO_FP). */
-export const farmaciaPopular = [
-  { principioAtivo: 'losartana potássica', dosagem: '50 mg' },
-  { principioAtivo: 'captopril', dosagem: '25 mg' },
-  { principioAtivo: 'hidroclorotiazida', dosagem: '25 mg' },
-  { principioAtivo: 'cloridrato de metformina', dosagem: '850 mg' },
-  { principioAtivo: 'glibenclamida', dosagem: '5 mg' },
-  { principioAtivo: 'sinvastatina', dosagem: '20 mg' },
-  { principioAtivo: 'atenolol', dosagem: '25 mg' },
-  { principioAtivo: 'sulfato de salbutamol', dosagem: '100 mcg' },
+/**
+ * Medicamentos gratuitos do Farmacia Popular, como na tabela T_DF_MEDICAMENTO_FP.
+ * Fonte: Elenco de Medicamentos e Insumos PFPB (gov.br/saude), atualizado em
+ * 31/08/2026. Os 2 insumos (absorvente e fralda) nao entram na consulta por remedio.
+ */
+export const elencoFarmaciaPopular: { principioAtivo: string; concentracao: string }[] = [
+  { principioAtivo: 'brometo de ipratrópio', concentracao: '0,02mg' },
+  { principioAtivo: 'brometo de ipratrópio', concentracao: '0,25mg' },
+  { principioAtivo: 'dipropionato de beclometasona', concentracao: '200mcg' },
+  { principioAtivo: 'dipropionato de beclometasona', concentracao: '250mcg' },
+  { principioAtivo: 'dipropionato de beclometasona', concentracao: '50mcg' },
+  { principioAtivo: 'sulfato de salbutamol', concentracao: '100mcg' },
+  { principioAtivo: 'sulfato de salbutamol', concentracao: '5mg' },
+  { principioAtivo: 'cloridrato de metformina', concentracao: '500mg' },
+  { principioAtivo: 'cloridrato de metformina', concentracao: '850mg' },
+  { principioAtivo: 'glibenclamida', concentracao: '5mg' },
+  { principioAtivo: 'insulina humana regular', concentracao: '100ui/ml' },
+  { principioAtivo: 'insulina humana', concentracao: '100ui/ml' },
+  { principioAtivo: 'atenolol', concentracao: '25mg' },
+  { principioAtivo: 'besilato de anlodipino', concentracao: '5mg' },
+  { principioAtivo: 'captopril', concentracao: '25mg' },
+  { principioAtivo: 'cloridrato de propranolol', concentracao: '40mg' },
+  { principioAtivo: 'hidroclorotiazida', concentracao: '25mg' },
+  { principioAtivo: 'losartana potássica', concentracao: '50mg' },
+  { principioAtivo: 'maleato de enalapril', concentracao: '10mg' },
+  { principioAtivo: 'espironolactona', concentracao: '25mg' },
+  { principioAtivo: 'furosemida', concentracao: '40mg' },
+  { principioAtivo: 'succinato de metoprolol', concentracao: '25mg' },
+  { principioAtivo: 'acetato de medroxiprogesterona', concentracao: '150mg' },
+  { principioAtivo: 'etinilestradiol + levonorgestrel', concentracao: '0,03mg + 0,15mg' },
+  { principioAtivo: 'noretisterona', concentracao: '0,35mg' },
+  {
+    principioAtivo: 'valerato de estradiol + enantato de noretisterona',
+    concentracao: '5mg + 50mg',
+  },
+  { principioAtivo: 'alendronato de sódio', concentracao: '70mg' },
+  { principioAtivo: 'sinvastatina', concentracao: '10mg' },
+  { principioAtivo: 'sinvastatina', concentracao: '20mg' },
+  { principioAtivo: 'sinvastatina', concentracao: '40mg' },
+  { principioAtivo: 'carbidopa + levodopa', concentracao: '25mg + 250mg' },
+  { principioAtivo: 'cloridrato de benserazida + levodopa', concentracao: '25mg + 100mg' },
+  { principioAtivo: 'maleato de timolol', concentracao: '2,5mg' },
+  { principioAtivo: 'maleato de timolol', concentracao: '5mg' },
+  { principioAtivo: 'budesonida', concentracao: '32mcg' },
+  { principioAtivo: 'budesonida', concentracao: '50mcg' },
+  { principioAtivo: 'dipropionato de beclometasona', concentracao: '50mcg/dose' },
+  { principioAtivo: 'dapagliflozina', concentracao: '10mg' },
 ];
 
-/** O que a "IA" de demonstracao le em qualquer foto de receita. */
+/**
+ * O que a "IA" de demonstracao le em qualquer foto de receita: a mesma receita
+ * do teste 11 do banco (2 gratuitos, 1 com dosagem diferente, 1 fora do elenco).
+ */
 export const receitaLida: Medicamento[] = [
   { nome: 'Losartana', principioAtivo: 'losartana potássica', dosagem: '50 mg' },
-  { nome: 'Glifage XR', principioAtivo: 'cloridrato de metformina', dosagem: '850 mg' },
-  { nome: 'Omeprazol', principioAtivo: 'omeprazol', dosagem: '20 mg' },
+  { nome: 'Glifage', principioAtivo: 'metformina', dosagem: '850 mg' },
+  { nome: 'Atenol', principioAtivo: 'atenolol', dosagem: '100 mg' },
+  { nome: 'Rivotril', principioAtivo: 'clonazepam', dosagem: '2 mg' },
 ];
