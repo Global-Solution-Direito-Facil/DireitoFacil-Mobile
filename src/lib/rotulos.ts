@@ -12,7 +12,7 @@ export const statusCaso: Record<StatusCaso, Rotulo & { descricao: string }> = {
     texto: 'Para começar',
     cor: 'info',
     fundo: 'infoClaro',
-    descricao: 'Você tem direito. Siga o passo a passo para pedir.',
+    descricao: 'Siga o passo a passo para fazer o pedido.',
   },
   EM_ANALISE: {
     texto: 'Em análise',
@@ -46,10 +46,30 @@ export const statusCaso: Record<StatusCaso, Rotulo & { descricao: string }> = {
   },
 };
 
-export const resultadoAvaliacao: Record<ResultadoElegibilidade, Rotulo> = {
-  ELEGIVEL: { texto: 'Tem direito', cor: 'sucesso', fundo: 'sucessoClaro' },
-  POSSIVEL: { texto: 'Pode ter direito', cor: 'alerta', fundo: 'alertaClaro' },
-  NAO_ELEGIVEL: { texto: 'Sem direito', cor: 'perigo', fundo: 'perigoClaro' },
+/**
+ * Resultado da regra oficial. O app nunca afirma "voce tem direito": quem
+ * confirma e o assistente social. E POSSIVEL nao pode soar como "nao": falta
+ * uma informacao, e a pessoa pode completar.
+ */
+export const resultadoAvaliacao: Record<ResultadoElegibilidade, Rotulo & { titulo: string }> = {
+  ELEGIVEL: {
+    texto: 'Possivelmente tem direito',
+    titulo: 'Você possivelmente tem direito',
+    cor: 'sucesso',
+    fundo: 'sucessoClaro',
+  },
+  POSSIVEL: {
+    texto: 'Pode ser que tenha direito',
+    titulo: 'Pode ser que você tenha direito',
+    cor: 'info',
+    fundo: 'infoClaro',
+  },
+  NAO_ELEGIVEL: {
+    texto: 'Sem direito por enquanto',
+    titulo: 'Pela regra, sem direito por enquanto',
+    cor: 'textoFraco',
+    fundo: 'fundo',
+  },
 };
 
 export const statusEnvio: Record<StatusEnvio, Rotulo> = {

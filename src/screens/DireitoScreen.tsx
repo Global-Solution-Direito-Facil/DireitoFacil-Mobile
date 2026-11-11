@@ -35,6 +35,7 @@ export function DireitoScreen({ navigation, route }: Props) {
 
   const c = caso.data;
   const status = statusCaso[c.status];
+  const resultado = resultadoAvaliacao[c.resultadoAvaliacao];
   const fechado = c.status === 'CONCEDIDO' || c.status === 'NEGADO';
   const dias = diasAte(c.dataPrazo);
   const passos = (c.orientacao?.passoAPasso ?? '').split('\n').filter(Boolean);
@@ -57,7 +58,7 @@ export function DireitoScreen({ navigation, route }: Props) {
         </Texto>
         <View style={e.selos}>
           <Selo {...status} />
-          <Selo {...resultadoAvaliacao[c.resultadoAvaliacao]} />
+          <Selo {...resultado} />
         </View>
       </View>
 
@@ -79,9 +80,33 @@ export function DireitoScreen({ navigation, route }: Props) {
         </Texto>
       </Cartao>
 
-      {c.resultadoAvaliacao === 'POSSIVEL' && c.motivo ? (
-        <Aviso tipo="alerta" texto={c.motivo} />
-      ) : null}
+      <Cartao style={[e.resultado, { borderColor: cores[resultado.cor] }]}>
+        <Texto variante="h3">{resultado.titulo}</Texto>
+        {c.resultadoAvaliacao === 'POSSIVEL' ? (
+          <>
+            <Texto>
+              Falta uma informação para a regra oficial ter certeza. Complete os dados de{' '}
+              {c.pessoa.nome} e a regra confere de novo.
+            </Texto>
+            {c.motivo ? (
+              <Texto variante="pequeno" cor="textoFraco">
+                Motivo: {c.motivo}
+              </Texto>
+            ) : null}
+            <Botao
+              titulo="Completar informação"
+              icone="account-edit-outline"
+              variante="secundario"
+              aoTocar={() => navigation.navigate('PessoaForm', { id: c.pessoa.id, foco: 'renda' })}
+            />
+          </>
+        ) : (
+          <Texto>
+            A regra oficial encontrou este direito para {c.pessoa.nome}. Um assistente social
+            confirma antes do pedido.
+          </Texto>
+        )}
+      </Cartao>
 
       <Cartao>
         <Texto variante="h3">Passo a passo</Texto>
@@ -133,6 +158,7 @@ export function DireitoScreen({ navigation, route }: Props) {
 
 const e = StyleSheet.create({
   cabecalho: { gap: espaco.sm },
+  resultado: { borderWidth: 1.5 },
   linhaDoTempo: { marginVertical: espaco.sm },
   selos: { flexDirection: 'row', gap: espaco.sm, flexWrap: 'wrap' },
   passo: { flexDirection: 'row', gap: espaco.md, alignItems: 'flex-start' },
