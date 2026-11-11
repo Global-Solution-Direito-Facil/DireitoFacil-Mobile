@@ -14,6 +14,11 @@
  * Os dois aceitam o MESMO token: o login acontece no Java e o .NET confia
  * nele (nos dois o `sub` e o e-mail). Por isso um interceptor so resolve.
  *
+ * QUEM PODE DERRUBAR A SESSAO: so o 401 do Java, que emite o token. Um 401 da
+ * .NET costuma ser configuracao de JWT diferente entre as APIs (comum durante
+ * a integracao), e deslogar a pessoa a cada upload seria pior: vira so um
+ * erro na tela.
+ *
  * MODO DEMONSTRACAO: com EXPO_PUBLIC_DATA_SOURCE=mock, so o ADAPTADOR muda
  * (a peca do Axios que faz a requisicao de fato). Interceptors, traducao de
  * erro, services e hooks continuam exatamente iguais.
@@ -47,6 +52,10 @@ const PREFIXO_DOTNET = '/api';
 /** Opcao de requisicao para as rotas da API .NET. */
 export const API_DOTNET: AxiosRequestConfig = { baseURL: config.urlDotnet + PREFIXO_DOTNET };
 
+function ehDaApiDotnet(requisicao: AxiosRequestConfig | undefined): boolean {
+  return requisicao?.baseURL === API_DOTNET.baseURL;
+}
+
 if (config.usarMock) {
   api.defaults.adapter = adaptadorMock;
 }
@@ -63,7 +72,7 @@ api.interceptors.request.use(async (requisicao) => {
   return requisicao;
 });
 
-// ---- Response: 401 derruba a sessao; todo erro vira AppError ---------------
+// ---- Response: 401 do Java derruba a sessao; todo erro vira AppError ------
 api.interceptors.response.use(
   (resposta) => {
     if (__DEV__) console.log(`[API] <- ${resposta.status} ${resposta.config.url}`);
@@ -77,6 +86,15 @@ api.interceptors.response.use(
     const url = erro.config?.url ?? '';
     const ehAutenticacao = url.includes('/auth/login') || url.includes('/auth/registrar');
 
+    if (erro.response?.status === 401 && ehDaApiDotnet(erro.config)) {
+      return Promise.reject(
+        new AppError({
+          tipo: 'NAO_AUTORIZADO',
+          mensagem: 'O serviço de documentos não aceitou o seu acesso. Tente de novo em instantes.',
+          status: 401,
+        }),
+      );
+    }
     if (erro.response?.status === 401 && !ehAutenticacao) {
       await notificarSessaoExpirada();
     }
