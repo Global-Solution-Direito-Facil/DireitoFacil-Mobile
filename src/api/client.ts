@@ -34,8 +34,14 @@ import { CHAVES_SEGURAS } from '../storage/chavesArmazenamento';
 import { notificarSessaoExpirada } from '../storage/sessaoExpirada';
 import { adaptadorMock } from './mock/adaptadorMock';
 
+/**
+ * Prefixo das rotas da API Java (controllers em @RequestMapping("/api/v1/...")).
+ * O .env guarda so o endereco do servidor; o prefixo fica aqui.
+ */
+const PREFIXO_JAVA = '/api/v1';
+
 export const api: AxiosInstance = create({
-  baseURL: config.urlJava,
+  baseURL: config.urlJava + PREFIXO_JAVA,
 
   /** Sem timeout, uma API fora do ar deixa a tela em "Carregando..." para sempre. */
   timeout: 15000,

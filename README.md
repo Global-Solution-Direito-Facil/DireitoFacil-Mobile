@@ -71,15 +71,15 @@ Expo SDK 58, a versão que o Expo Go atual abre.
 
 ## Requisitos da disciplina
 
-| Requisito                                   | Onde está                                                                                                                                                                                                                                                 |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 6+ telas com navegação                      | `src/navigation/RootNavigator.tsx`                                                                                                                                                                                                                        |
-| CRUD via API, com erro, loaders e mensagens | Familiares: criar, ler, editar e excluir (`/pessoas`, Java). Documentos: enviar, listar e apagar (`/api/documentos`, .NET). Envios: criar, submeter, aprovar e devolver (`/api/envios`, .NET). Camada própria em `src/api` + `src/services` + `src/hooks` |
-| Autenticação                                | `src/contexts/AuthContext.tsx`: cadastro, login, logout que apaga token, dados e cache, sessão que sobrevive a fechar o app, e `401` da API Java que derruba a sessão de qualquer tela                                                                    |
-| Rotas protegidas                            | Quatro caminhos no `RootNavigator`: lendo a sessão, sem sessão, cidadão e gestor. As telas de um papel não existem para o outro                                                                                                                           |
-| Identidade visual                           | `src/lib/tema.ts` (cores, fontes, espaços), `assets/fonts` (Lexend e Atkinson Hyperlegible, licença OFL), ícone e ilustrações próprias em `assets/`                                                                                                       |
-| Arquitetura                                 | Pastas por responsabilidade (abaixo), ESLint + Prettier, TypeScript estrito e a regra de camadas no lint                                                                                                                                                  |
-| Publicação                                  | Firebase App Distribution e tela "Sobre o app" com o hash do commit, calculado no build                                                                                                                                                                   |
+| Requisito                                   | Onde está                                                                                                                                                                                                                                                        |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 6+ telas com navegação                      | `src/navigation/RootNavigator.tsx`                                                                                                                                                                                                                               |
+| CRUD via API, com erro, loaders e mensagens | Familiares: criar, ler, editar e excluir (`/api/v1/pessoas`, Java). Documentos: enviar, listar e apagar (`/api/documentos`, .NET). Envios: criar, submeter, aprovar e devolver (`/api/envios`, .NET). Camada própria em `src/api` + `src/services` + `src/hooks` |
+| Autenticação                                | `src/contexts/AuthContext.tsx`: cadastro, login, logout que apaga token, dados e cache, sessão que sobrevive a fechar o app, e `401` da API Java que derruba a sessão de qualquer tela                                                                           |
+| Rotas protegidas                            | Quatro caminhos no `RootNavigator`: lendo a sessão, sem sessão, cidadão e gestor. As telas de um papel não existem para o outro                                                                                                                                  |
+| Identidade visual                           | `src/lib/tema.ts` (cores, fontes, espaços), `assets/fonts` (Lexend e Atkinson Hyperlegible, licença OFL), ícone e ilustrações próprias em `assets/`                                                                                                              |
+| Arquitetura                                 | Pastas por responsabilidade (abaixo), ESLint + Prettier, TypeScript estrito e a regra de camadas no lint                                                                                                                                                         |
+| Publicação                                  | Firebase App Distribution e tela "Sobre o app" com o hash do commit, calculado no build                                                                                                                                                                          |
 
 ## Arquitetura em camadas
 
@@ -113,10 +113,10 @@ docs/
 
 ### Duas APIs, um cliente
 
-| API                | Responsável      | Rotas                                                                                                                    |
-| ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Java (Spring Boot) | Biribilli e Alex | `POST /auth/login`, `POST /auth/registrar`, `/pessoas`, `/pessoas/{id}/laudos`, `/casos`, `/direitos`, `/receitas`       |
-| .NET (Azure)       | Pietro           | `/api/documentos` (upload com `Idempotency-Key`), `/api/envios`, `/api/envios/{id}/submeter`, `/api/envios/{id}/analise` |
+| API                | Responsável      | Rotas                                                                                                                                                               |
+| ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Java (Spring Boot) | Biribilli e Alex | `POST /api/v1/auth/login`, `POST /api/v1/auth/registrar`, `/api/v1/pessoas`, `/api/v1/pessoas/{id}/laudos`, `/api/v1/casos`, `/api/v1/direitos`, `/api/v1/receitas` |
+| .NET (Azure)       | Pietro           | `/api/documentos` (upload com `Idempotency-Key`), `/api/envios`, `/api/envios/{id}/submeter`, `/api/envios/{id}/analise`                                            |
 
 O login acontece no Java e a API .NET aceita o mesmo token (nos dois, o `sub` é o e-mail). Por isso um interceptor só coloca o `Authorization` nas duas.
 
@@ -170,11 +170,11 @@ Leia o QR code com o Expo Go ou aperte `a` no terminal para abrir no emulador An
 
 ### Variáveis de ambiente
 
-| Variável                     | Valores         | Para quê                                                             |
-| ---------------------------- | --------------- | -------------------------------------------------------------------- |
-| `EXPO_PUBLIC_DATA_SOURCE`    | `mock` ou `api` | Dados de demonstração ou APIs reais                                  |
-| `EXPO_PUBLIC_JAVA_API_URL`   | URL             | API Java. No emulador Android, `http://10.0.2.2:8080` é o computador |
-| `EXPO_PUBLIC_DOTNET_API_URL` | URL             | API .NET, sem o `/api` no fim (o app coloca)                         |
+| Variável                     | Valores         | Para quê                                                                                                    |
+| ---------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_DATA_SOURCE`    | `mock` ou `api` | Dados de demonstração ou APIs reais                                                                         |
+| `EXPO_PUBLIC_JAVA_API_URL`   | URL             | API Java, sem o `/api/v1` no fim (o app coloca). No emulador Android, `http://10.0.2.2:8080` é o computador |
+| `EXPO_PUBLIC_DOTNET_API_URL` | URL             | API .NET, sem o `/api` no fim (o app coloca)                                                                |
 
 Depois de mudar o `.env`, reinicie com `npx expo start --clear`. Nada secreto vai nessas variáveis: tudo que começa com `EXPO_PUBLIC_` fica dentro do app.
 
