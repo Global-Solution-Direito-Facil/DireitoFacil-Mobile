@@ -31,16 +31,14 @@ export function PedirAnaliseScreen({ navigation, route }: Props) {
   const { mostrar } = useSnackbar();
   const [selecionados, setSelecionados] = useState<string[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const chave = useRef(novaChaveIdempotencia());
+  const chaveCriar = useRef(novaChaveIdempotencia());
+  const chaveSubmeter = useRef(novaChaveIdempotencia());
 
   const c = caso.data;
   const existente =
     c && envios.data
       ? (envios.data.find(
-          (x) =>
-            x.codigoDireito === c.direito.codigo &&
-            (x.status === 'RASCUNHO' || x.status === 'DEVOLVIDO') &&
-            (!x.pessoaNome || x.pessoaNome === c.pessoa.nome),
+          (x) => x.casoId === c.id && (x.status === 'RASCUNHO' || x.status === 'DEVOLVIDO'),
         ) ?? null)
       : null;
 
@@ -59,11 +57,10 @@ export function PedirAnaliseScreen({ navigation, route }: Props) {
     );
   }
 
-  const daPessoa = (documentos.data ?? []).filter(
-    (d) => d.pessoaId === null || d.pessoaId === c.pessoa.id,
-  );
+  // A .NET guarda os documentos da familia toda; quem escolhe o que vai no pedido e a pessoa.
+  const daPessoa = documentos.data ?? [];
   // Enquanto a pessoa nao mexe, um envio devolvido comeca com os documentos que ja estavam nele.
-  const marcados = selecionados ?? existente?.documentos.map((d) => d.id) ?? [];
+  const marcados = selecionados ?? existente?.documentoIds ?? [];
 
   function alternar(id: string) {
     setSelecionados(marcados.includes(id) ? marcados.filter((x) => x !== id) : [...marcados, id]);
@@ -79,10 +76,11 @@ export function PedirAnaliseScreen({ navigation, route }: Props) {
     pedir.mutate(
       {
         existente,
+        casoId: c.id,
         codigoDireito: c.direito.codigo,
-        pessoaNome: c.pessoa.nome,
         documentoIds: marcados,
-        chave: chave.current,
+        chaveCriar: chaveCriar.current,
+        chaveSubmeter: chaveSubmeter.current,
       },
       {
         onSuccess: () => {
@@ -116,7 +114,7 @@ export function PedirAnaliseScreen({ navigation, route }: Props) {
       {pedir.isError ? <Aviso tipo="perigo" texto={mensagemDoErro(pedir.error)} /> : null}
 
       {daPessoa.length === 0 ? (
-        <Aviso tipo="info" texto="Você ainda não enviou documentos desta pessoa." />
+        <Aviso tipo="info" texto="Você ainda não enviou documentos." />
       ) : (
         daPessoa.map((d) => (
           <CaixaMarcacao

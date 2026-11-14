@@ -17,7 +17,7 @@ export function useLerReceita() {
   return useMutation({
     mutationFn: async (params: { arquivo: ArquivoLocal; chave: string }) => {
       const documento = await enviarDocumento(
-        { tipo: 'RECEITA', pessoaId: null, arquivo: params.arquivo },
+        { tipo: 'RECEITA', pessoaId: null, arquivo: params.arquivo, consentimentoSaude: true },
         params.chave,
       );
       return { documentoId: documento.id, medicamentos: await extrairReceita(documento.id) };

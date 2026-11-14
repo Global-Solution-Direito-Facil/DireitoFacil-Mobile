@@ -41,10 +41,7 @@ export function DireitoScreen({ navigation, route }: Props) {
   const passos = (c.orientacao?.passoAPasso ?? '').split('\n').filter(Boolean);
 
   /** O envio deste direito para esta pessoa, se a familia ja montou um. */
-  const envio = (envios.data ?? []).find(
-    (x) =>
-      x.codigoDireito === c.direito.codigo && (!x.pessoaNome || x.pessoaNome === c.pessoa.nome),
-  );
+  const envio = (envios.data ?? []).find((x) => x.casoId === c.id);
   const podePedirAnalise =
     (c.status === 'ABERTO' || c.status === 'DOCUMENTOS_PENDENTES') &&
     (!envio || envio.status === 'RASCUNHO' || envio.status === 'DEVOLVIDO');
@@ -136,7 +133,7 @@ export function DireitoScreen({ navigation, route }: Props) {
         <Cartao>
           <Texto variante="h3">Análise do assistente social</Texto>
           <Selo {...statusEnvio[envio.status]} />
-          <Texto cor="textoFraco">{envio.documentos.length} documento(s) no envio</Texto>
+          <Texto cor="textoFraco">{envio.documentoIds.length} documento(s) no envio</Texto>
           {envio.status === 'DEVOLVIDO' && envio.observacao ? (
             <Aviso tipo="alerta" texto={`O que corrigir: ${envio.observacao}`} />
           ) : null}

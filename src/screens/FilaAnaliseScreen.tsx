@@ -71,20 +71,20 @@ export function FilaAnaliseScreen({ navigation }: Props) {
             aoTocar={() =>
               navigation.navigate('AnaliseEnvio', {
                 id: envio.id,
-                nome: envio.pessoaNome ?? envio.donoNome,
+                nome: envio.pessoaNome ?? envio.donoEmail,
               })
             }
-            rotuloAcessivel={`Envio de ${envio.donoNome}, ${envio.codigoDireito}`}
+            rotuloAcessivel={`Envio de ${envio.pessoaNome ?? envio.donoEmail}, ${envio.codigoDireito}`}
           >
-            <Texto variante="h3">{envio.pessoaNome ?? envio.donoNome}</Texto>
-            <Texto cor="textoFraco">Responsável: {envio.donoNome}</Texto>
+            <Texto variante="h3">{envio.pessoaNome ?? envio.donoEmail}</Texto>
+            <Texto cor="textoFraco">Responsável: {envio.donoEmail}</Texto>
             <Texto variante="corpoForte" cor="primaria">
               {envio.codigoDireito}
             </Texto>
             <View style={e.linha}>
               <Selo {...statusEnvio[envio.status]} />
               <Texto variante="pequeno" cor="textoFraco">
-                {envio.documentos.length} doc. · enviado em {formatarData(envio.dataEnvio)}
+                {envio.documentoIds.length} doc. · enviado em {formatarData(envio.dataEnvio)}
               </Texto>
             </View>
           </Cartao>

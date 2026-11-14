@@ -74,7 +74,10 @@ export function NovoDocumentoScreen({ navigation, route }: Props) {
     if (!tipo || !arquivo || !pessoaId || !consentimento) return;
 
     enviar.mutate(
-      { documento: { tipo, pessoaId, arquivo }, chave: chave.current },
+      {
+        documento: { tipo, pessoaId, arquivo, consentimentoSaude: consentimento },
+        chave: chave.current,
+      },
       {
         onSuccess: () => {
           mostrar('Documento enviado.');

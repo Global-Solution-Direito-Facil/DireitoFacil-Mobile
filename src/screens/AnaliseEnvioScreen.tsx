@@ -83,10 +83,8 @@ export function AnaliseEnvioScreen({ navigation, route }: Props) {
       }
     >
       <Cartao>
-        <Texto variante="h2">{x.pessoaNome ?? x.donoNome}</Texto>
-        <Texto cor="textoFraco">
-          Responsável: {x.donoNome} ({x.donoEmail})
-        </Texto>
+        <Texto variante="h2">{x.pessoaNome ?? x.donoEmail}</Texto>
+        <Texto cor="textoFraco">Responsável: {x.donoEmail}</Texto>
         <Texto variante="corpoForte" cor="primaria">
           {x.codigoDireito}
         </Texto>

@@ -17,7 +17,7 @@ import { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 import { config } from '../../config/env';
 import { criarJwtDemonstracao, lerJwt } from '../../lib/jwt';
-import type { Documento, Envio } from '../../types/documento';
+import type { DocumentoApi, EnvioApi } from '../../types/documento';
 import type { Pessoa } from '../../types/pessoa';
 import type { ResultadoFarmacia } from '../../types/receita';
 import * as dados from './dados';
@@ -86,15 +86,69 @@ function idsDasPessoas(u: UsuarioMock) {
   return db.pessoas.filter((p) => p.responsavel.id === u.id).map((p) => p.id);
 }
 
-function documentosDe(u: UsuarioMock): Documento[] {
-  db.documentos[u.email] ??= [];
-  return db.documentos[u.email]!;
+/** Os nomes do enum TipoDocumento na .NET (o formulario de upload usa estes). */
+const TIPOS_DOCUMENTO = [
+  'Laudo',
+  'Receita',
+  'Rg',
+  'Cpf',
+  'ComprovanteRenda',
+  'ComprovanteResidencia',
+  'Outro',
+];
+
+/** PagedResponse da .NET: page comeca em 1 e pageSize vai de 1 a 100. */
+function paginar<T>(lista: T[], query: Record<string, unknown>) {
+  const page = Number(query.page ?? 1);
+  const pageSize = Number(query.pageSize ?? 20);
+  if (!(page >= 1) || !(pageSize >= 1 && pageSize <= 100)) {
+    throw new ErroHttp(400, 'Paginação inválida.');
+  }
+  const inicio = (page - 1) * pageSize;
+  return {
+    page,
+    pageSize,
+    totalItems: lista.length,
+    totalPages: Math.ceil(lista.length / pageSize),
+    items: lista.slice(inicio, inicio + pageSize),
+  };
 }
 
-function envioVisivel(u: UsuarioMock, id: string): Envio {
+/** A .NET recusa com 400 POST sem Idempotency-Key ou com chave que nao e GUID. */
+function exigirChave(chave: string | null) {
+  const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!chave || !guid.test(chave)) {
+    throw new ErroHttp(400, 'Idempotency-Key ausente ou inválida.');
+  }
+}
+
+/** O dono ve o proprio documento; o gestor ve os documentos dos envios que analisa. */
+function documentoVisivel(u: UsuarioMock, id: string): DocumentoApi {
+  const doc = db.documentos.find((d) => d.id === id);
+  if (!doc || (u.papel !== 'GESTOR' && doc.cidadaoId !== u.email)) {
+    throw new ErroHttp(404, 'Documento não encontrado.');
+  }
+  return doc;
+}
+
+/** documentoIds: de 1 a 20, todos do proprio cidadao. */
+function validarDocumentos(u: UsuarioMock, valor: unknown): string[] {
+  const ids = Array.isArray(valor) ? valor.map(String) : [];
+  if (ids.length < 1 || ids.length > 20) {
+    throw new ErroHttp(400, 'Escolha de 1 a 20 documentos.', { documentoIds: 'De 1 a 20.' });
+  }
+  for (const id of ids) {
+    if (!db.documentos.some((d) => d.id === id && d.cidadaoId === u.email)) {
+      throw new ErroHttp(404, 'Documento não encontrado.');
+    }
+  }
+  return ids;
+}
+
+function envioVisivel(u: UsuarioMock, id: string): EnvioApi {
   const envio = db.envios.find((e) => e.id === id);
   if (!envio) throw new ErroHttp(404, 'Envio não encontrado.');
-  if (u.papel !== 'GESTOR' && envio.donoEmail !== u.email) {
+  if (u.papel !== 'GESTOR' && envio.cidadaoId !== u.email) {
     throw new ErroHttp(403, 'Você não tem permissão para isso.');
   }
   return envio;
@@ -453,7 +507,21 @@ const rotas: Rota[] = [
     api: 'dotnet',
     metodo: 'GET',
     padrao: /^\/documentos$/,
-    tratar: ({ usuario }) => ({ data: documentosDe(usuario()) }),
+    tratar: ({ usuario, query }) => {
+      const u = usuario();
+      return {
+        data: paginar(
+          db.documentos.filter((d) => d.cidadaoId === u.email),
+          query,
+        ),
+      };
+    },
+  },
+  {
+    api: 'dotnet',
+    metodo: 'GET',
+    padrao: /^\/documentos\/([\w-]+)$/,
+    tratar: ({ usuario, params }) => ({ data: documentoVisivel(usuario(), params[0]!) }),
   },
   {
     api: 'dotnet',
@@ -461,27 +529,41 @@ const rotas: Rota[] = [
     padrao: /^\/documentos$/,
     tratar: ({ usuario, corpo, chave }) => {
       const u = usuario();
+      exigirChave(chave);
       const arquivo = corpo.arquivo as
         { name?: string; type?: string; tamanhoBytes?: number } | undefined;
       if (!arquivo) throw new ErroHttp(400, 'Envie um arquivo.');
+      const tipo = String(corpo.tipo ?? '');
+      if (!TIPOS_DOCUMENTO.includes(tipo)) {
+        throw new ErroHttp(400, 'Tipo de documento inválido.', { tipo: 'Valor não aceito.' });
+      }
       if (!TIPOS_ACEITOS.includes(arquivo.type ?? '')) {
         throw new ErroHttp(415, 'Formato de arquivo não aceito. Use PDF, JPG ou PNG.');
       }
       if ((arquivo.tamanhoBytes ?? 0) > LIMITE_ARQUIVO) {
         throw new ErroHttp(413, 'O arquivo é grande demais. O limite é 10 MB.');
       }
+      const consentimento = String(corpo.consentimentoSaude) === 'true';
+      if ((tipo === 'Laudo' || tipo === 'Receita') && !consentimento) {
+        throw new ErroHttp(422, 'Para laudo e receita é preciso aceitar o uso de dados de saúde.');
+      }
       return comIdempotencia(`doc:${u.email}`, chave, () => {
-        const novo: Documento = {
+        const agora = new Date().toISOString();
+        const novo: DocumentoApi = {
           id: `doc-${++db.sequencia}`,
-          tipo: String(corpo.tipo) as Documento['tipo'],
+          cidadaoId: u.email,
+          tipo,
+          descricao: corpo.descricao ? String(corpo.descricao) : null,
           nomeArquivo: arquivo.name ?? 'documento.jpg',
           contentType: arquivo.type ?? 'image/jpeg',
-          tamanhoBytes: arquivo.tamanhoBytes ?? 0,
-          status: 'RECEBIDO',
-          pessoaId: corpo.pessoaId ? Number(corpo.pessoaId) : null,
-          dataEnvio: new Date().toISOString(),
+          tamanhoArquivo: arquivo.tamanhoBytes ?? 0,
+          status: 'Recebido',
+          consentimentoSaude: consentimento,
+          consentimentoSaudeEm: consentimento ? agora : null,
+          criadoEm: agora,
+          atualizadoEm: null,
         };
-        documentosDe(u).unshift(novo);
+        db.documentos.unshift(novo);
         return { status: 201, data: novo };
       });
     },
@@ -491,11 +573,11 @@ const rotas: Rota[] = [
     metodo: 'DELETE',
     padrao: /^\/documentos\/([\w-]+)$/,
     tratar: ({ usuario, params }) => {
-      const lista = documentosDe(usuario());
-      const indice = lista.findIndex((d) => d.id === params[0]);
+      const u = usuario();
+      const indice = db.documentos.findIndex((d) => d.id === params[0] && d.cidadaoId === u.email);
       if (indice < 0) throw new ErroHttp(404, 'Documento não encontrado.');
       const emAnalise = db.envios.some(
-        (e) => e.status === 'ENVIADO' && e.documentos.some((d) => d.id === params[0]),
+        (e) => e.status === 'Enviado' && e.documentoIds.includes(params[0]!),
       );
       if (emAnalise) {
         throw new ErroHttp(
@@ -503,7 +585,7 @@ const rotas: Rota[] = [
           'Esse documento está num envio em análise e não pode ser apagado agora.',
         );
       }
-      lista.splice(indice, 1);
+      db.documentos.splice(indice, 1);
       return { status: 204 };
     },
   },
@@ -515,11 +597,14 @@ const rotas: Rota[] = [
     padrao: /^\/envios$/,
     tratar: ({ usuario, query }) => {
       const u = usuario();
-      if (query.status) {
-        exigirGestor(u);
-        return { data: db.envios.filter((e) => e.status === query.status) };
-      }
-      return { data: db.envios.filter((e) => e.donoEmail === u.email) };
+      // O gestor ve a fila de todos; o cidadao, so os seus.
+      const visiveis =
+        u.papel === 'GESTOR' ? db.envios : db.envios.filter((e) => e.cidadaoId === u.email);
+      const status = query.status ? String(query.status).toUpperCase() : null;
+      const filtrados = status
+        ? visiveis.filter((e) => e.status.toUpperCase() === status)
+        : visiveis;
+      return { data: paginar(filtrados, query) };
     },
   },
   {
@@ -532,41 +617,48 @@ const rotas: Rota[] = [
     api: 'dotnet',
     metodo: 'POST',
     padrao: /^\/envios$/,
-    tratar: ({ usuario, corpo }) => {
+    tratar: ({ usuario, corpo, chave }) => {
       const u = usuario();
-      const envio: Envio = {
-        id: `env-${++db.sequencia}`,
-        codigoDireito: String(corpo.codigoDireito),
-        donoEmail: u.email,
-        donoNome: u.nome,
-        pessoaNome: (corpo.pessoaNome as string | null) ?? null,
-        status: 'RASCUNHO',
-        observacao: null,
-        documentos: [],
-        dataCriacao: new Date().toISOString(),
-        dataEnvio: null,
-      };
-      db.envios.unshift(envio);
-      return { status: 201, data: envio };
+      exigirChave(chave);
+      const casoId = Number(corpo.casoId);
+      const direitoCodigo = String(corpo.direitoCodigo ?? '').trim();
+      const ids = validarDocumentos(u, corpo.documentoIds);
+      if (!casoId || !direitoCodigo) {
+        throw new ErroHttp(400, 'Informe o caso e o direito do envio.', {
+          ...(casoId ? {} : { casoId: 'Obrigatório.' }),
+          ...(direitoCodigo ? {} : { direitoCodigo: 'Obrigatório.' }),
+        });
+      }
+      return comIdempotencia(`envio-novo:${u.email}`, chave, () => {
+        const envio: EnvioApi = {
+          id: `env-${++db.sequencia}`,
+          cidadaoId: u.email,
+          casoId,
+          direitoCodigo,
+          status: 'Rascunho',
+          observacao: null,
+          gestorId: null,
+          enviadoEm: null,
+          analisadoEm: null,
+          criadoEm: new Date().toISOString(),
+          documentoIds: ids,
+        };
+        db.envios.unshift(envio);
+        return { status: 201, data: envio };
+      });
     },
   },
   {
     api: 'dotnet',
-    metodo: 'POST',
-    padrao: /^\/envios\/([\w-]+)\/documentos$/,
+    metodo: 'PUT',
+    padrao: /^\/envios\/([\w-]+)$/,
     tratar: ({ usuario, params, corpo }) => {
       const u = usuario();
       const envio = envioVisivel(u, params[0]!);
-      if (envio.status !== 'RASCUNHO' && envio.status !== 'DEVOLVIDO') {
-        throw new ErroHttp(400, 'Só dá para mudar os documentos antes de enviar.');
+      if (envio.status !== 'Rascunho' && envio.status !== 'Devolvido') {
+        throw new ErroHttp(409, 'Só dá para mudar os documentos antes de enviar.');
       }
-      const ids = (corpo.documentoIds ?? []) as string[];
-      const meus = documentosDe(u);
-      envio.documentos = ids.map((id) => {
-        const doc = meus.find((d) => d.id === id);
-        if (!doc) throw new ErroHttp(404, 'Documento não encontrado.');
-        return doc;
-      });
+      envio.documentoIds = validarDocumentos(u, corpo.documentoIds);
       return { data: envio };
     },
   },
@@ -575,39 +667,43 @@ const rotas: Rota[] = [
     metodo: 'POST',
     padrao: /^\/envios\/([\w-]+)\/submeter$/,
     tratar: ({ usuario, params, chave }) => {
+      exigirChave(chave);
       const envio = envioVisivel(usuario(), params[0]!);
       return comIdempotencia(`envio:${envio.id}`, chave, () => {
-        if (envio.status !== 'RASCUNHO' && envio.status !== 'DEVOLVIDO') {
+        if (envio.status !== 'Rascunho' && envio.status !== 'Devolvido') {
           throw new ErroHttp(409, 'Esse envio já foi enviado.');
         }
-        if (envio.documentos.length === 0) {
-          throw new ErroHttp(400, 'Anexe pelo menos um documento antes de enviar.');
-        }
-        envio.status = 'ENVIADO';
+        envio.status = 'Enviado';
         envio.observacao = null;
-        envio.dataEnvio = new Date().toISOString();
+        envio.enviadoEm = new Date().toISOString();
         return { data: copiar(envio) };
       });
     },
   },
   {
     api: 'dotnet',
-    metodo: 'PATCH',
-    padrao: /^\/envios\/([\w-]+)\/status$/,
+    metodo: 'POST',
+    padrao: /^\/envios\/([\w-]+)\/analise$/,
     tratar: ({ usuario, params, corpo }) => {
       const u = usuario();
       exigirGestor(u);
       const envio = envioVisivel(u, params[0]!);
-      if (envio.status !== 'ENVIADO')
+      if (envio.status !== 'Enviado')
         throw new ErroHttp(409, 'Esse envio não está aguardando análise.');
+      const decisao = String(corpo.decisao ?? '').toUpperCase();
+      if (decisao !== 'APROVAR' && decisao !== 'DEVOLVER') {
+        throw new ErroHttp(400, 'Decisão inválida.', { decisao: 'Use APROVAR ou DEVOLVER.' });
+      }
       const observacao = String(corpo.observacao ?? '').trim();
-      if (corpo.decisao === 'DEVOLVER' && !observacao) {
+      if (decisao === 'DEVOLVER' && !observacao) {
         throw new ErroHttp(400, 'Explique o que a família precisa corrigir.', {
           observacao: 'Obrigatório.',
         });
       }
-      envio.status = corpo.decisao === 'APROVAR' ? 'APROVADO' : 'DEVOLVIDO';
+      envio.status = decisao === 'APROVAR' ? 'Aprovado' : 'Devolvido';
       envio.observacao = observacao || null;
+      envio.gestorId = u.email;
+      envio.analisadoEm = new Date().toISOString();
       return { data: envio };
     },
   },

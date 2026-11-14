@@ -3,13 +3,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
-  anexarDocumentos,
   buscarEnvio,
   criarEnvio,
   decidirEnvio,
   listarFila,
   listarMeusEnvios,
   submeterEnvio,
+  trocarDocumentos,
 } from '../services/enviosService';
 import { DecisaoAnalise, Envio, StatusEnvio } from '../types/documento';
 
@@ -33,23 +33,30 @@ export function useEnvio(id: string) {
 }
 
 /**
- * Pedir analise sao TRES chamadas em sequencia: criar o envio (se ainda nao
- * existe um rascunho ou devolvido), anexar os documentos e submeter. Ficam
- * numa mutacao so porque, para quem usa, e um botao so.
+ * Pedir analise: se ja existe um rascunho ou devolvido, troca os documentos
+ * (PUT); senao cria o envio com caso e documentos (POST). Depois submete.
+ * Cada POST leva a sua Idempotency-Key, gerada uma vez pela tela.
  */
 export function usePedirAnalise() {
   const cliente = useQueryClient();
   return useMutation({
     mutationFn: async (params: {
       existente: Envio | null;
+      casoId: number;
       codigoDireito: string;
-      pessoaNome: string;
       documentoIds: string[];
-      chave: string;
+      chaveCriar: string;
+      chaveSubmeter: string;
     }) => {
-      const envio = params.existente ?? (await criarEnvio(params.codigoDireito, params.pessoaNome));
-      await anexarDocumentos(envio.id, params.documentoIds);
-      return submeterEnvio(envio.id, params.chave);
+      const envio = params.existente
+        ? await trocarDocumentos(params.existente.id, params.documentoIds)
+        : await criarEnvio(
+            params.casoId,
+            params.codigoDireito,
+            params.documentoIds,
+            params.chaveCriar,
+          );
+      return submeterEnvio(envio.id, params.chaveSubmeter);
     },
     onSuccess: () => cliente.invalidateQueries({ queryKey: chavesEnvios.todos }),
   });

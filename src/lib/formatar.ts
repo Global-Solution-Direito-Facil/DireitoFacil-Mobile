@@ -58,6 +58,18 @@ export function paraConstante(valor: string): string {
     .toUpperCase();
 }
 
+/**
+ * "COMPROVANTE_RENDA" -> "ComprovanteRenda". E o nome do enum na .NET, que o
+ * formulario de upload aceita para todos os tipos (com underline, nao).
+ */
+export function paraPascal(valor: string): string {
+  return valor
+    .toLowerCase()
+    .split('_')
+    .map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1))
+    .join('');
+}
+
 /** Mascaras aplicadas enquanto a pessoa digita. */
 export const mascaras = {
   cpf(valor: string) {

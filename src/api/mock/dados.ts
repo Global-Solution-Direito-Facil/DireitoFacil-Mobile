@@ -8,7 +8,7 @@
  */
 
 import type { Caso, Direito, ResultadoElegibilidade, StatusCaso } from '../../types/caso';
-import type { Documento, Envio } from '../../types/documento';
+import type { DocumentoApi, EnvioApi } from '../../types/documento';
 import type { Laudo, Pessoa } from '../../types/pessoa';
 import type { Medicamento } from '../../types/receita';
 import type { Papel } from '../../types/usuario';
@@ -633,80 +633,83 @@ export const casos: Caso[] = linhas.map(
   },
 );
 
-function documento(
-  id: string,
-  tipo: Documento['tipo'],
-  nomeArquivo: string,
-  pessoaId: number,
-): Documento {
+/** DocumentoResponse como a .NET devolve: enums em PascalCase e dono pelo e-mail. */
+function documento(id: string, cidadaoId: string, tipo: string, nomeArquivo: string): DocumentoApi {
+  const saude = tipo === 'Laudo' || tipo === 'Receita';
   return {
     id,
+    cidadaoId,
     tipo,
+    descricao: null,
     nomeArquivo,
     contentType: nomeArquivo.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
-    tamanhoBytes: 380_000,
-    status: tipo === 'LAUDO' ? 'EXTRAIDO' : 'RECEBIDO',
-    pessoaId,
-    dataEnvio: '2026-11-06T14:00:00',
+    tamanhoArquivo: 380_000,
+    status: tipo === 'Laudo' ? 'Extraido' : 'Recebido',
+    consentimentoSaude: saude,
+    consentimentoSaudeEm: saude ? '2026-11-06T14:00:00' : null,
+    criadoEm: '2026-11-06T14:00:00',
+    atualizadoEm: null,
   };
 }
 
-/** Documentos por e-mail do dono (a API .NET liga documento ao `sub` do token). */
-export const documentos: Record<string, Documento[]> = {
-  'ana.almeida@email.com': [
-    documento('doc-0001', 'LAUDO', 'laudo_lucas_almeida.jpg', 1),
-    documento('doc-0011', 'RG', 'rg_lucas_almeida.jpg', 1),
-    documento('doc-0012', 'COMPROVANTE_RENDA', 'renda_familia_almeida.pdf', 1),
-  ],
-  'paula.souza@email.com': [
-    documento('doc-0003', 'LAUDO', 'laudo_helena_souza.jpg', 3),
-    documento('doc-0031', 'COMPROVANTE_RESIDENCIA', 'conta_luz_helena.pdf', 3),
-  ],
-  'rita.barbosa@email.com': [
-    documento('doc-0005', 'LAUDO', 'laudo_rita_barbosa.jpg', 5),
-    documento('doc-0051', 'COMPROVANTE_RENDA', 'renda_rita_barbosa.pdf', 5),
-  ],
-  'carlos.menezes@email.com': [documento('doc-0002', 'LAUDO', 'laudo_carlos_menezes.jpg', 2)],
-  'marcos.teixeira@email.com': [documento('doc-0004', 'LAUDO', 'laudo_marcos_teixeira.pdf', 4)],
-};
+const ANA = 'ana.almeida@email.com';
+const PAULA = 'paula.souza@email.com';
+const RITA = 'rita.barbosa@email.com';
 
-export const envios: Envio[] = [
+/** Documentos de todas as familias; a .NET filtra pelo dono do token (o `sub`). */
+export const documentos: DocumentoApi[] = [
+  documento('doc-0001', ANA, 'Laudo', 'laudo_lucas_almeida.jpg'),
+  documento('doc-0011', ANA, 'Rg', 'rg_lucas_almeida.jpg'),
+  documento('doc-0012', ANA, 'ComprovanteRenda', 'renda_familia_almeida.pdf'),
+  documento('doc-0003', PAULA, 'Laudo', 'laudo_helena_souza.jpg'),
+  documento('doc-0031', PAULA, 'ComprovanteResidencia', 'conta_luz_helena.pdf'),
+  documento('doc-0005', RITA, 'Laudo', 'laudo_rita_barbosa.jpg'),
+  documento('doc-0051', RITA, 'ComprovanteRenda', 'renda_rita_barbosa.pdf'),
+  documento('doc-0002', 'carlos.menezes@email.com', 'Laudo', 'laudo_carlos_menezes.jpg'),
+  documento('doc-0004', 'marcos.teixeira@email.com', 'Laudo', 'laudo_marcos_teixeira.pdf'),
+];
+
+/** EnvioResponse: o envio aponta para o caso do Java e para os ids dos documentos. */
+export const envios: EnvioApi[] = [
   {
     id: 'env-0001',
-    codigoDireito: 'BPC_PCD',
-    donoEmail: 'ana.almeida@email.com',
-    donoNome: 'Ana Almeida',
-    pessoaNome: 'Lucas Almeida',
-    status: 'ENVIADO',
+    cidadaoId: ANA,
+    casoId: 1, // Lucas, BPC_PCD
+    direitoCodigo: 'BPC_PCD',
+    status: 'Enviado',
     observacao: null,
-    documentos: [...(documentos['ana.almeida@email.com'] ?? [])],
-    dataCriacao: '2026-11-06T14:10:00',
-    dataEnvio: '2026-11-06T14:12:00',
+    gestorId: null,
+    enviadoEm: '2026-11-06T14:12:00',
+    analisadoEm: null,
+    criadoEm: '2026-11-06T14:10:00',
+    documentoIds: ['doc-0001', 'doc-0011', 'doc-0012'],
   },
   {
     id: 'env-0002',
-    codigoDireito: 'BPC_IDOSO',
-    donoEmail: 'rita.barbosa@email.com',
-    donoNome: 'Rita Barbosa',
-    pessoaNome: 'Rita Barbosa',
-    status: 'ENVIADO',
+    cidadaoId: RITA,
+    casoId: 25, // Rita, BPC_IDOSO
+    direitoCodigo: 'BPC_IDOSO',
+    status: 'Enviado',
     observacao: null,
-    documentos: [...(documentos['rita.barbosa@email.com'] ?? [])],
-    dataCriacao: '2026-11-07T09:30:00',
-    dataEnvio: '2026-11-07T09:31:00',
+    gestorId: null,
+    enviadoEm: '2026-11-07T09:31:00',
+    analisadoEm: null,
+    criadoEm: '2026-11-07T09:30:00',
+    documentoIds: ['doc-0005', 'doc-0051'],
   },
   {
     id: 'env-0003',
-    codigoDireito: 'CADUNICO',
-    donoEmail: 'paula.souza@email.com',
-    donoNome: 'Paula Souza',
-    pessoaNome: 'Helena Souza',
-    status: 'DEVOLVIDO',
+    cidadaoId: PAULA,
+    casoId: 21, // Helena, CADUNICO
+    direitoCodigo: 'CADUNICO',
+    status: 'Devolvido',
     observacao:
       'O comprovante de residência precisa ser dos últimos 3 meses. Envie uma conta mais recente.',
-    documentos: [...(documentos['paula.souza@email.com'] ?? [])],
-    dataCriacao: '2026-11-04T16:00:00',
-    dataEnvio: '2026-11-04T16:05:00',
+    gestorId: 'rafaela.gomes@cras.gov.br',
+    enviadoEm: '2026-11-04T16:05:00',
+    analisadoEm: '2026-11-05T10:00:00',
+    criadoEm: '2026-11-04T16:00:00',
+    documentoIds: ['doc-0003', 'doc-0031'],
   },
 ];
 
