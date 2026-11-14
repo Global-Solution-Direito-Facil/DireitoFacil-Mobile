@@ -39,9 +39,8 @@ export async function excluirPessoa(id: number): Promise<void> {
   await api.delete(`/pessoas/${id}`);
 }
 
+/** Laudos de um familiar: GET /pessoas/{id}/laudos (lista simples, sem paginacao). */
 export async function listarLaudos(pessoaId: number): Promise<Laudo[]> {
-  const resposta = await api.get<Pagina<Laudo>>('/laudos', {
-    params: { ...UMA_PAGINA, pessoaId },
-  });
-  return resposta.data.content;
+  const resposta = await api.get<Laudo[]>(`/pessoas/${pessoaId}/laudos`);
+  return resposta.data;
 }

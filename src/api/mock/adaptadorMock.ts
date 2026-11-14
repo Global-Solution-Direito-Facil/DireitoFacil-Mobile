@@ -382,10 +382,11 @@ const rotas: Rota[] = [
   {
     api: 'java',
     metodo: 'GET',
-    padrao: /^\/laudos$/,
-    tratar: ({ usuario, query }) => {
-      const pessoa = pessoaVisivel(usuario(), Number(query.pessoaId));
-      return { data: pagina(db.laudos.filter((l) => l.pessoa.id === pessoa.id)) };
+    // Como no Java: os laudos ficam embaixo da pessoa e vem como lista simples.
+    padrao: /^\/pessoas\/(\d+)\/laudos$/,
+    tratar: ({ usuario, params }) => {
+      const pessoa = pessoaVisivel(usuario(), Number(params[0]));
+      return { data: db.laudos.filter((l) => l.pessoa.id === pessoa.id) };
     },
   },
   {
