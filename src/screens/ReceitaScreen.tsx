@@ -6,8 +6,8 @@
  *
  * A conferencia no meio e obrigatoria: a leitura erra em letra de mao e em
  * nome comercial. O app guarda o que a IA leu e avisa o banco se a pessoa
- * corrigiu (corrigido = S/N). A dosagem nao tem formato rigido: o banco
- * normaliza espacos, ponto e virgula.
+ * corrigiu (corrigido). A dosagem nao tem formato rigido: o banco normaliza
+ * espacos, ponto e virgula. A receita fica registrada no familiar escolhido.
  *
  * O resultado tem tres estados (gratuito, dosagem diferente, fora do elenco)
  * e a orientacao do banco. O app nunca sugere trocar de remedio ou de
@@ -24,13 +24,16 @@ import { Cartao } from '../components/Cartao';
 import { ConsentimentoLgpd } from '../components/ConsentimentoLgpd';
 import { EstadoCarregando } from '../components/EstadoCarregando';
 import { ItemDeLista } from '../components/ItemDeLista';
+import { Opcoes } from '../components/Opcoes';
 import { SeletorImagem } from '../components/SeletorImagem';
 import { Selo } from '../components/Selo';
 import { Tela } from '../components/Tela';
 import { Texto } from '../components/Texto';
 import { mensagemDoErro } from '../errors/AppError';
+import { usePessoas } from '../hooks/usePessoas';
 import { useConsultarFarmaciaPopular, useLerReceita } from '../hooks/useReceita';
 import { novaChaveIdempotencia } from '../lib/confirmar';
+import { primeiroNome } from '../lib/formatar';
 import { Origem, escolherImagem } from '../lib/imagem';
 import { Rotulo } from '../lib/rotulos';
 import { espaco } from '../lib/tema';
@@ -65,13 +68,17 @@ export function ReceitaScreen() {
   const [arquivo, setArquivo] = useState<ArquivoLocal | null>(null);
   const [consentimento, setConsentimento] = useState(false);
   const [linhas, setLinhas] = useState<Linha[]>([]);
-  const [documentoId, setDocumentoId] = useState<string | null>(null);
-  const [erros, setErros] = useState<{ arquivo?: string; consentimento?: string; lista?: string }>(
-    {},
-  );
+  const [pessoaId, setPessoaId] = useState<number | null>(null);
+  const [erros, setErros] = useState<{
+    pessoa?: string;
+    arquivo?: string;
+    consentimento?: string;
+    lista?: string;
+  }>({});
   const [erroFoto, setErroFoto] = useState<string | null>(null);
   const chave = useRef(novaChaveIdempotencia());
 
+  const pessoas = usePessoas();
   const ler = useLerReceita();
   const consultar = useConsultarFarmaciaPopular();
 
@@ -90,17 +97,17 @@ export function ReceitaScreen() {
 
   function aoLer() {
     const encontrados = {
+      ...(pessoaId ? {} : { pessoa: 'Escolha de quem é a receita.' }),
       ...(arquivo ? {} : { arquivo: 'Tire uma foto da receita ou escolha da galeria.' }),
       ...(consentimento ? {} : { consentimento: 'É preciso concordar para enviar.' }),
     };
     setErros(encontrados);
-    if (!arquivo || !consentimento) return;
+    if (!pessoaId || !arquivo || !consentimento) return;
     ler.mutate(
-      { arquivo, chave: chave.current },
+      { arquivo, pessoaId, chave: chave.current },
       {
         onSuccess: (lida) => {
-          setDocumentoId(lida.documentoId);
-          setLinhas(lida.medicamentos.map((m) => ({ lido: m, atual: { ...m } })));
+          setLinhas(lida.map((m) => ({ lido: m, atual: { ...m } })));
           setEtapa('conferir');
         },
       },
@@ -109,7 +116,7 @@ export function ReceitaScreen() {
 
   function aoConsultar() {
     const preenchidas = linhas.filter((l) => l.atual.principioAtivo.trim());
-    if (preenchidas.length === 0 || !documentoId) {
+    if (preenchidas.length === 0 || !pessoaId) {
       setErros({ lista: 'Preencha o nome ou o princípio ativo de pelo menos um remédio.' });
       return;
     }
@@ -119,7 +126,7 @@ export function ReceitaScreen() {
       nomeLido: l.lido?.nome ?? '',
       corrigido: foiCorrigido(l),
     }));
-    consultar.mutate({ documentoId, remedios }, { onSuccess: () => setEtapa('resultado') });
+    consultar.mutate({ pessoaId, remedios }, { onSuccess: () => setEtapa('resultado') });
   }
 
   function recomecar() {
@@ -127,7 +134,6 @@ export function ReceitaScreen() {
     setArquivo(null);
     setConsentimento(false);
     setLinhas([]);
-    setDocumentoId(null);
     setErros({});
     ler.reset();
     consultar.reset();
@@ -263,6 +269,20 @@ export function ReceitaScreen() {
       </View>
       {ler.isError ? <Aviso tipo="perigo" texto={mensagemDoErro(ler.error)} /> : null}
       {erroFoto ? <Aviso tipo="perigo" texto={erroFoto} /> : null}
+      {pessoas.data?.length === 0 ? (
+        <Aviso
+          tipo="alerta"
+          texto="Cadastre um familiar na tela inicial antes de consultar a receita."
+        />
+      ) : (
+        <Opcoes
+          rotulo="De quem é a receita?"
+          opcoes={(pessoas.data ?? []).map((p) => ({ valor: p.id, texto: primeiroNome(p.nome) }))}
+          selecionada={pessoaId}
+          aoEscolher={setPessoaId}
+          erro={erros.pessoa}
+        />
+      )}
       <SeletorImagem arquivo={arquivo} aoEscolher={aoEscolher} erro={erros.arquivo} />
       <ConsentimentoLgpd
         aceito={consentimento}

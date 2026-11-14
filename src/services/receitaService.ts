@@ -1,33 +1,21 @@
 /**
  * SERVICE DA RECEITA (API Java).
  *
- * Dois passos, de proposito separados:
- *   1. extrair    a IA le a foto e devolve os remedios
- *   2. consultar  depois que a PESSOA confere, a tabela da Farmacia Popular decide
+ *   1. extrair   POST /receitas/extracao      a IA le a foto e devolve os remedios
+ *   2. registrar POST /receitas               { pessoaId } -> a receita do familiar
+ *                POST /receitas/{id}/itens    um por remedio, ja conferido pela pessoa
+ *                GET  /receitas/{id}          o resultado de cada item no elenco
  *
  * A leitura pode errar (letra de mao, nome comercial); por isso a tela
- * obriga a conferencia entre um passo e outro, e o app avisa o banco se a
- * pessoa corrigiu alguma coisa (corrigido = S/N).
+ * obriga a conferencia entre um passo e outro, e cada item avisa o banco
+ * se a pessoa corrigiu alguma coisa (corrigido).
+ *
+ * O documentoId do Java e numerico e o da foto e o GUID da .NET, por isso a
+ * receita e registrada so com o familiar.
  */
 
 import { api } from '../api/client';
-import {
-  Medicamento,
-  RemedioConferido,
-  ResultadoFarmacia,
-  ResultadoMedicamento,
-} from '../types/receita';
-
-/** Formato de cada item no corpo e na resposta da API (colunas de T_DF_RECEITA_ITEM). */
-type ItemApi = {
-  nomeLido: string;
-  nome: string;
-  principioAtivo: string;
-  concentracao: string;
-  corrigido: 'S' | 'N';
-};
-
-type ItemResultadoApi = ItemApi & { resultado: ResultadoFarmacia; orientacao: string };
+import { Medicamento, ReceitaApi, RemedioConferido, ResultadoMedicamento } from '../types/receita';
 
 export async function extrairReceita(documentoId: string): Promise<Medicamento[]> {
   const resposta = await api.post<Medicamento[]>('/receitas/extracao', { documentoId });
@@ -35,26 +23,30 @@ export async function extrairReceita(documentoId: string): Promise<Medicamento[]
 }
 
 export async function consultarFarmaciaPopular(
-  documentoId: string,
+  pessoaId: number,
   remedios: RemedioConferido[],
 ): Promise<ResultadoMedicamento[]> {
-  const itens: ItemApi[] = remedios.map((r) => ({
-    nomeLido: r.nomeLido,
-    nome: r.nome.trim(),
-    principioAtivo: r.principioAtivo.trim(),
-    concentracao: r.dosagem.trim(),
-    corrigido: r.corrigido ? 'S' : 'N',
-  }));
-  const resposta = await api.post<ItemResultadoApi[]>('/receitas/consulta', {
-    documentoId,
-    itens,
-  });
-  return resposta.data.map((item) => ({
-    nome: item.nome || item.nomeLido,
+  const receita = await api.post<ReceitaApi>('/receitas', { pessoaId });
+  const id = receita.data.id;
+
+  // Em sequencia: a ordem dos itens e a ordem em que a pessoa conferiu.
+  for (const r of remedios) {
+    await api.post(`/receitas/${id}/itens`, {
+      // nomeLido e obrigatorio no Java; remedio incluido a mao vai com o nome digitado.
+      nomeLido: r.nomeLido || r.nome.trim() || r.principioAtivo.trim(),
+      principioAtivo: r.principioAtivo.trim(),
+      concentracao: r.dosagem.trim(),
+      corrigido: r.corrigido,
+    });
+  }
+
+  const final = await api.get<ReceitaApi>(`/receitas/${id}`);
+  return final.data.itens.map((item, i) => ({
+    nome: remedios[i]?.nome.trim() || item.nomeLido,
     principioAtivo: item.principioAtivo,
-    dosagem: item.concentracao,
-    corrigido: item.corrigido === 'S',
+    dosagem: item.concentracao ?? '',
+    corrigido: item.corrigido,
     resultado: item.resultado,
-    orientacao: item.orientacao,
+    orientacao: item.orientacao ?? '',
   }));
 }

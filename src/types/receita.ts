@@ -35,3 +35,28 @@ export type ResultadoMedicamento = {
   /** Orientacao do banco. Nunca sugere trocar de remedio ou de dosagem. */
   orientacao: string;
 };
+
+// ---- Contrato da API Java ------------------------------------------------------
+
+/** ReceitaItemResponse: o Java decide o resultado ao gravar o item. */
+export type ReceitaItemApi = {
+  id: number;
+  nomeLido: string;
+  principioAtivo: string;
+  concentracao: string | null;
+  corrigido: boolean;
+  resultado: ResultadoFarmacia;
+  medicamento: unknown;
+  orientacao: string | null;
+};
+
+/** ReceitaResponse (GET /receitas/{id}). */
+export type ReceitaApi = {
+  id: number;
+  pessoa: { id: number; nome: string };
+  documentoId: number | null;
+  dataRegistro: string;
+  totalItens: number;
+  totalGratuitos: number;
+  itens: ReceitaItemApi[];
+};

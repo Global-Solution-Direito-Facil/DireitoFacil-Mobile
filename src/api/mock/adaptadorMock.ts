@@ -19,7 +19,7 @@ import { config } from '../../config/env';
 import { criarJwtDemonstracao, lerJwt } from '../../lib/jwt';
 import type { DocumentoApi, EnvioApi } from '../../types/documento';
 import type { Pessoa } from '../../types/pessoa';
-import type { ResultadoFarmacia } from '../../types/receita';
+import type { ReceitaApi, ReceitaItemApi, ResultadoFarmacia } from '../../types/receita';
 import * as dados from './dados';
 import type { UsuarioMock } from './dados';
 
@@ -34,6 +34,7 @@ const db = {
   documentos: copiar(dados.documentos),
   envios: copiar(dados.envios),
   idempotencia: new Map<string, { status: number; data: unknown }>(),
+  receitas: [] as ReceitaApi[],
   sequencia: 1000,
 };
 
@@ -80,6 +81,13 @@ function pessoaVisivel(u: UsuarioMock, id: number) {
     throw new ErroHttp(403, 'Você não tem permissão para isso.');
   }
   return pessoa;
+}
+
+function receitaVisivel(u: UsuarioMock, id: number): ReceitaApi {
+  const receita = db.receitas.find((r) => r.id === id);
+  if (!receita) throw new ErroHttp(404, 'Receita não encontrada.');
+  pessoaVisivel(u, receita.pessoa.id);
+  return receita;
 }
 
 function idsDasPessoas(u: UsuarioMock) {
@@ -155,14 +163,6 @@ function envioVisivel(u: UsuarioMock, id: string): EnvioApi {
 }
 
 // ---- Farmacia Popular (mesma regra de PKG_FARMACIA_POPULAR.P_AVALIAR) -------
-
-type ItemReceita = {
-  nomeLido: string;
-  nome: string;
-  principioAtivo: string;
-  concentracao: string;
-  corrigido: 'S' | 'N';
-};
 
 /** Minusculas, sem acento, sem espacos repetidos; virgula e ponto valem igual na dosagem. */
 function normalizar(texto: string): string {
@@ -488,18 +488,63 @@ const rotas: Rota[] = [
   {
     api: 'java',
     metodo: 'POST',
-    padrao: /^\/receitas\/consulta$/,
+    padrao: /^\/receitas$/,
     tratar: ({ usuario, corpo }) => {
-      usuario();
-      const itens = (corpo.itens ?? []) as ItemReceita[];
-      if (itens.length === 0) throw new ErroHttp(400, 'Confira pelo menos um remédio.');
-      return {
-        data: itens.map((item) => {
-          const resultado = avaliarNoElenco(item.principioAtivo, item.concentracao);
-          return { ...item, resultado, orientacao: ORIENTACAO_FARMACIA[resultado] };
-        }),
+      const u = usuario();
+      if (!corpo.pessoaId) {
+        throw new ErroHttp(400, 'Informe de quem é a receita.', { pessoaId: 'Obrigatório.' });
+      }
+      const pessoa = pessoaVisivel(u, Number(corpo.pessoaId));
+      const receita: ReceitaApi = {
+        id: ++db.sequencia,
+        pessoa: { id: pessoa.id, nome: pessoa.nome },
+        documentoId: corpo.documentoId ? Number(corpo.documentoId) : null,
+        dataRegistro: new Date().toISOString(),
+        totalItens: 0,
+        totalGratuitos: 0,
+        itens: [],
       };
+      db.receitas.push(receita);
+      return { status: 201, data: receita };
     },
+  },
+  {
+    api: 'java',
+    metodo: 'POST',
+    padrao: /^\/receitas\/(\d+)\/itens$/,
+    tratar: ({ usuario, params, corpo }) => {
+      const receita = receitaVisivel(usuario(), Number(params[0]));
+      const nomeLido = String(corpo.nomeLido ?? '').trim();
+      const principioAtivo = String(corpo.principioAtivo ?? '').trim();
+      if (!nomeLido || !principioAtivo) {
+        throw new ErroHttp(400, 'Preencha o nome e o princípio ativo.', {
+          ...(nomeLido ? {} : { nomeLido: 'Obrigatório.' }),
+          ...(principioAtivo ? {} : { principioAtivo: 'Obrigatório.' }),
+        });
+      }
+      const concentracao = corpo.concentracao ? String(corpo.concentracao) : null;
+      const resultado = avaliarNoElenco(principioAtivo, concentracao ?? '');
+      const item: ReceitaItemApi = {
+        id: ++db.sequencia,
+        nomeLido,
+        principioAtivo,
+        concentracao,
+        corrigido: corpo.corrigido === true,
+        resultado,
+        medicamento: null,
+        orientacao: ORIENTACAO_FARMACIA[resultado],
+      };
+      receita.itens.push(item);
+      receita.totalItens = receita.itens.length;
+      receita.totalGratuitos = receita.itens.filter((i) => i.resultado === 'GRATUITO').length;
+      return { status: 201, data: item };
+    },
+  },
+  {
+    api: 'java',
+    metodo: 'GET',
+    padrao: /^\/receitas\/(\d+)$/,
+    tratar: ({ usuario, params }) => ({ data: receitaVisivel(usuario(), Number(params[0])) }),
   },
 
   // Documentos (.NET)
