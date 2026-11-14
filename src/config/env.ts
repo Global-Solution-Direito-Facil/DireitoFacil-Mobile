@@ -13,7 +13,9 @@ import Constants from 'expo-constants';
 
 const FONTE = (process.env.EXPO_PUBLIC_DATA_SOURCE ?? 'mock').toLowerCase();
 const URL_JAVA = process.env.EXPO_PUBLIC_JAVA_API_URL ?? 'http://10.0.2.2:8080';
-const URL_DOTNET = process.env.EXPO_PUBLIC_DOTNET_API_URL ?? 'http://10.0.2.2:5000';
+const URL_DOTNET = process.env.EXPO_PUBLIC_DOTNET_API_URL ?? 'http://10.0.2.2:5264';
+/** Prefixo das rotas da .NET. Padrao /api/v1; /api enquanto a API nao migrar. */
+const PREFIXO_DOTNET = process.env.EXPO_PUBLIC_DOTNET_API_PREFIX ?? '/api/v1';
 /** Calculado pelo app.config.js na hora do build, a partir do git. */
 const COMMIT = String(Constants.expoConfig?.extra?.commitHash ?? 'desconhecido');
 
@@ -35,8 +37,9 @@ export const config = {
   /** API Java (Spring Boot): login, pessoas, laudos, direitos e casos. */
   urlJava: URL_JAVA,
 
-  /** API .NET (Minimal API): documentos e envios. */
+  /** API .NET: documentos e envios. */
   urlDotnet: URL_DOTNET,
+  prefixoDotnet: PREFIXO_DOTNET,
 
   /** Hash do commit do build, mostrado na tela "Sobre o app". */
   commit: COMMIT,

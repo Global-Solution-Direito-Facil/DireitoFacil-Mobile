@@ -170,11 +170,12 @@ Leia o QR code com o Expo Go ou aperte `a` no terminal para abrir no emulador An
 
 ### Variáveis de ambiente
 
-| Variável                     | Valores         | Para quê                                                                                                    |
-| ---------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------- |
-| `EXPO_PUBLIC_DATA_SOURCE`    | `mock` ou `api` | Dados de demonstração ou APIs reais                                                                         |
-| `EXPO_PUBLIC_JAVA_API_URL`   | URL             | API Java, sem o `/api/v1` no fim (o app coloca). No emulador Android, `http://10.0.2.2:8080` é o computador |
-| `EXPO_PUBLIC_DOTNET_API_URL` | URL             | API .NET, sem o `/api` no fim (o app coloca)                                                                |
+| Variável                        | Valores             | Para quê                                                                                                    |
+| ------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_DATA_SOURCE`       | `mock` ou `api`     | Dados de demonstração ou APIs reais                                                                         |
+| `EXPO_PUBLIC_JAVA_API_URL`      | URL                 | API Java, sem o `/api/v1` no fim (o app coloca). No emulador Android, `http://10.0.2.2:8080` é o computador |
+| `EXPO_PUBLIC_DOTNET_API_PREFIX` | `/api/v1` ou `/api` | Opcional. Prefixo das rotas da .NET (padrão `/api/v1`)                                                      |
+| `EXPO_PUBLIC_DOTNET_API_URL`    | URL                 | API .NET, sem o `/api` no fim (o app coloca)                                                                |
 
 Depois de mudar o `.env`, reinicie com `npx expo start --clear`. Nada secreto vai nessas variáveis: tudo que começa com `EXPO_PUBLIC_` fica dentro do app.
 
