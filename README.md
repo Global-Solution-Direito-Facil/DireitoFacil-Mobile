@@ -50,8 +50,8 @@ Expo SDK 58, a versão que o Expo Go atual abre.
 | 7   | Detalhe do direito   | cidadão | Linha do tempo do pedido, resultado da regra, passo a passo da IA e fonte legal |
 | 8   | Documentos           | cidadão | Documentos enviados; apagar                                                     |
 | 9   | Enviar documento     | cidadão | Câmera ou galeria, consentimento LGPD, `Idempotency-Key`                        |
-| 10  | Pedir análise        | cidadão | Monta o envio e manda para o assistente social                                  |
-| 11  | Minha receita        | cidadão | Foto da receita → conferência → Farmácia Popular                                |
+| 10  | Pedir análise        | cidadão | Monta o envio do caso com os documentos e manda para o assistente social        |
+| 11  | Minha receita        | cidadão | Familiar → foto da receita → conferência → Farmácia Popular                     |
 | 12  | Perfil               | todos   | Conta, "Sobre o app" e sair                                                     |
 | 13  | Fila de análise      | gestor  | Envios aguardando, devolvidos e aprovados                                       |
 | 14  | Analisar envio       | gestor  | Aprovar ou devolver com observação                                              |
@@ -67,19 +67,19 @@ Expo SDK 58, a versão que o Expo Go atual abre.
 
 **Renda individual.** O cadastro da pessoa pergunta a renda dela própria (além da renda da família), usada no passe de ônibus para idosos (60+, até 2 salários mínimos de renda individual). São três respostas: o valor em reais, "Não tenho renda" (manda 0) e "Não sei / prefiro não informar" (manda vazio, nunca 0). Renda não informada deixa o passe como `POSSIVEL`.
 
-**Receita (Farmácia Popular).** A IA lê a receita, mas a pessoa confere e pode corrigir nome, princípio ativo e dosagem antes da consulta; o app avisa o banco se ela corrigiu (`corrigido` S/N). O resultado tem três estados: **de graça**, **dosagem diferente da lista** e **fora da lista**, cada um com a orientação do banco. O app nunca sugere trocar de remédio ou de dosagem e sempre manda confirmar na farmácia credenciada.
+**Receita (Farmácia Popular).** A pessoa escolhe de quem é a receita e a IA lê a foto. Antes da consulta, a pessoa confere e pode corrigir nome, princípio ativo e dosagem. O app registra a receita no familiar (`POST /receitas`), grava cada remédio em `/receitas/{id}/itens`, avisando se a pessoa corrigiu a leitura (`corrigido`), e lê o resultado em `GET /receitas/{id}`. O resultado tem três estados: **de graça**, **dosagem diferente da lista** e **fora da lista**, cada um com a orientação do banco. O app nunca sugere trocar de remédio ou de dosagem e sempre manda confirmar na farmácia credenciada.
 
 ## Requisitos da disciplina
 
-| Requisito                                   | Onde está                                                                                                                                                                                                                                                        |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 6+ telas com navegação                      | `src/navigation/RootNavigator.tsx`                                                                                                                                                                                                                               |
-| CRUD via API, com erro, loaders e mensagens | Familiares: criar, ler, editar e excluir (`/api/v1/pessoas`, Java). Documentos: enviar, listar e apagar (`/api/documentos`, .NET). Envios: criar, submeter, aprovar e devolver (`/api/envios`, .NET). Camada própria em `src/api` + `src/services` + `src/hooks` |
-| Autenticação                                | `src/contexts/AuthContext.tsx`: cadastro, login, logout que apaga token, dados e cache, sessão que sobrevive a fechar o app, e `401` da API Java que derruba a sessão de qualquer tela                                                                           |
-| Rotas protegidas                            | Quatro caminhos no `RootNavigator`: lendo a sessão, sem sessão, cidadão e gestor. As telas de um papel não existem para o outro                                                                                                                                  |
-| Identidade visual                           | `src/lib/tema.ts` (cores, fontes, espaços), `assets/fonts` (Lexend e Atkinson Hyperlegible, licença OFL), ícone e ilustrações próprias em `assets/`                                                                                                              |
-| Arquitetura                                 | Pastas por responsabilidade (abaixo), ESLint + Prettier, TypeScript estrito e a regra de camadas no lint                                                                                                                                                         |
-| Publicação                                  | Firebase App Distribution e tela "Sobre o app" com o hash do commit, calculado no build                                                                                                                                                                          |
+| Requisito                                   | Onde está                                                                                                                                                                                                                                                              |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 6+ telas com navegação                      | `src/navigation/RootNavigator.tsx`                                                                                                                                                                                                                                     |
+| CRUD via API, com erro, loaders e mensagens | Familiares: criar, ler, editar e excluir (`/api/v1/pessoas`, Java). Documentos: enviar, listar e apagar (`/api/v1/documentos`, .NET). Envios: criar, submeter, aprovar e devolver (`/api/v1/envios`, .NET). Camada própria em `src/api` + `src/services` + `src/hooks` |
+| Autenticação                                | `src/contexts/AuthContext.tsx`: cadastro, login, logout que apaga token, dados e cache, sessão que sobrevive a fechar o app, e `401` da API Java que derruba a sessão de qualquer tela                                                                                 |
+| Rotas protegidas                            | Quatro caminhos no `RootNavigator`: lendo a sessão, sem sessão, cidadão e gestor. As telas de um papel não existem para o outro                                                                                                                                        |
+| Identidade visual                           | `src/lib/tema.ts` (cores, fontes, espaços), `assets/fonts` (Lexend e Atkinson Hyperlegible, licença OFL), ícone e ilustrações próprias em `assets/`                                                                                                                    |
+| Arquitetura                                 | Pastas por responsabilidade (abaixo), ESLint + Prettier, TypeScript estrito e a regra de camadas no lint                                                                                                                                                               |
+| Publicação                                  | Firebase App Distribution e tela "Sobre o app" com o hash do commit, calculado no build                                                                                                                                                                                |
 
 ## Arquitetura em camadas
 
@@ -116,17 +116,17 @@ docs/
 | API                | Responsável      | Rotas                                                                                                                                                               |
 | ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Java (Spring Boot) | Biribilli e Alex | `POST /api/v1/auth/login`, `POST /api/v1/auth/registrar`, `/api/v1/pessoas`, `/api/v1/pessoas/{id}/laudos`, `/api/v1/casos`, `/api/v1/direitos`, `/api/v1/receitas` |
-| .NET (Azure)       | Pietro           | `/api/documentos` (upload com `Idempotency-Key`), `/api/envios`, `/api/envios/{id}/submeter`, `/api/envios/{id}/analise`                                            |
+| .NET (Azure)       | Pietro           | `/api/v1/documentos` (upload com `Idempotency-Key`), `/api/v1/envios`, `/api/v1/envios/{id}/submeter`, `/api/v1/envios/{id}/analise`                                |
 
 O login acontece no Java e a API .NET aceita o mesmo token (nos dois, o `sub` é o e-mail). Por isso um interceptor só coloca o `Authorization` nas duas.
 
 Só o `401` da API Java, que emite o token, encerra a sessão. Um `401` da .NET vira uma mensagem de erro na tela: durante a integração é comum a configuração do JWT ficar diferente entre as APIs, e o app não deve deslogar a pessoa a cada upload por causa disso.
 
-O prefixo das rotas da .NET fica num lugar só (`PREFIXO_DOTNET` em `src/api/client.ts`).
+As duas APIs usam o prefixo `/api/v1`. O do Java fica em `PREFIXO_JAVA` (`src/api/client.ts`); o da .NET vem de `EXPO_PUBLIC_DOTNET_API_PREFIX`, com padrão `/api/v1`.
 
 ### Modo demonstração
 
-Com `EXPO_PUBLIC_DATA_SOURCE=mock`, só o **adaptador** do Axios muda (`src/api/mock/adaptadorMock.ts`). Os services, os hooks, os interceptors e o tratamento de erro são os mesmos do modo real. O adaptador imita as regras das APIs (papéis, `401`/`403`/`404`/`409`/`413`/`415`, `Idempotency-Key`, limite de 10 MB), a regra do passe do idoso e a consulta da Farmácia Popular. Os dados ficam só em memória e voltam ao início quando o app reinicia.
+Com `EXPO_PUBLIC_DATA_SOURCE=mock`, só o **adaptador** do Axios muda (`src/api/mock/adaptadorMock.ts`). Os services, os hooks, os interceptors e o tratamento de erro são os mesmos do modo real. O adaptador imita as regras das APIs (papéis, `400`/`401`/`403`/`404`/`409`/`413`/`415`/`422`, `Idempotency-Key` em UUID, listas paginadas da .NET, consentimento obrigatório para laudo e receita, limite de 10 MB), a regra do passe do idoso e a consulta da Farmácia Popular. Os dados ficam só em memória e voltam ao início quando o app reinicia.
 
 **Na entrega, o app roda com `EXPO_PUBLIC_DATA_SOURCE=api`**: os dados ficam nas APIs, não no aparelho.
 
@@ -175,7 +175,7 @@ Leia o QR code com o Expo Go ou aperte `a` no terminal para abrir no emulador An
 | `EXPO_PUBLIC_DATA_SOURCE`       | `mock` ou `api`     | Dados de demonstração ou APIs reais                                                                         |
 | `EXPO_PUBLIC_JAVA_API_URL`      | URL                 | API Java, sem o `/api/v1` no fim (o app coloca). No emulador Android, `http://10.0.2.2:8080` é o computador |
 | `EXPO_PUBLIC_DOTNET_API_PREFIX` | `/api/v1` ou `/api` | Opcional. Prefixo das rotas da .NET (padrão `/api/v1`)                                                      |
-| `EXPO_PUBLIC_DOTNET_API_URL`    | URL                 | API .NET, sem o `/api` no fim (o app coloca)                                                                |
+| `EXPO_PUBLIC_DOTNET_API_URL`    | URL                 | API .NET, sem o prefixo no fim. Rodando local, `http://10.0.2.2:5264`                                       |
 
 Depois de mudar o `.env`, reinicie com `npx expo start --clear`. Nada secreto vai nessas variáveis: tudo que começa com `EXPO_PUBLIC_` fica dentro do app.
 
@@ -209,7 +209,7 @@ Todos os dados são **fictícios**, os mesmos da carga do banco (repositório `D
 3. **Logout limpa tudo.** Saia e entre com outra conta: nada da família anterior aparece.
 4. **Resultado possível.** Entre como `rita.barbosa@email.com` e abra o BPC: aparece "Pode ser que você tenha direito", com o motivo e o botão **Completar informação**.
 5. **Renda individual.** No cadastro da Rita, escolha "Não sei / prefiro não informar" e salve: o passe do idoso passa para "Pode ser que tenha direito".
-6. **Receita.** Em Minha receita, fotografe qualquer papel: a leitura de demonstração traz 4 remédios e o resultado mostra 2 de graça, 1 com dosagem diferente e 1 fora da lista.
+6. **Receita.** Em Minha receita, escolha o familiar e fotografe qualquer papel: a leitura de demonstração traz 4 remédios e o resultado mostra 2 de graça, 1 com dosagem diferente e 1 fora da lista.
 7. **`401` derruba a sessão.** Com a API real, expire o token e puxe uma lista: o app volta para o login sozinho, com aviso. Um `401` só da API .NET mostra erro, sem deslogar.
 
 ## Publicação (Firebase App Distribution)
@@ -230,10 +230,12 @@ Declaração exigida pela disciplina.
 
 ## 👥 Integrantes da Equipe
 
-| Nome                               | RM     | Turma  | GitHub                                        | LinkedIn                                                            |
-| ---------------------------------- | ------ | ------ | --------------------------------------------- | ------------------------------------------------------------------- |
-| **Alexander Dennis Isidro Mamani** | 565554 | 2TDSPG | [alex-isidro](https://github.com/alex-isidro) | [LinkedIn](https://www.linkedin.com/in/alexander-dennis-a3b48824b/) |
-| **Gabriel Neris Losano**           | 564093 | 2TDSPG | —                                             | —                                                                   |
-| **João Vítor Biribilli Ravelli**   | 565594 | 2TDSPG | —                                             | —                                                                   |
-| **Kelson Zhang**                   | 563748 | 2TDSPG | [KelsonZh0](https://github.com/KelsonZh0)     | [LinkedIn](https://www.linkedin.com/in/kelson-zhang-211456323/)     |
-| **Pietro Paranhos Wilhelm**        | 561378 | 2TDSPG | —                                             | —                                                                   |
+| Nome                               | RM     | Turma  | GitHub                                            | LinkedIn                                                        |
+| ---------------------------------- | ------ | ------ | ------------------------------------------------- | --------------------------------------------------------------- |
+| **Alexander Dennis Isidro Mamani** | 565554 | 2TDSPG | [alex-isidro](https://github.com/alex-isidro)     | [LinkedIn](https://www.linkedin.com/in/alexander-isidro/)       |
+| **Gabriel Neris Losano**           | 564093 | 2TDSPG | [GNLosano](https://github.com/GNLosano)           | [LinkedIn](https://www.linkedin.com/in/gabriellosano/)          |
+| **João Vítor Biribilli Ravelli**   | 565594 | 2TDSPG | [biribillidev](https://github.com/biribillidev)   | —                                                               |
+| **Kelson Zhang**                   | 563748 | 2TDSPG | [KelsonZh0](https://github.com/KelsonZh0)         | [LinkedIn](https://www.linkedin.com/in/kelson-zhang-211456323/) |
+| **Pietro Paranhos Wilhelm**        | 561378 | 2TDSPG | [PietroWilhelm](https://github.com/PietroWilhelm) | [LinkedIn](https://www.linkedin.com/in/pietrowilhelm/)          |
+
+---
