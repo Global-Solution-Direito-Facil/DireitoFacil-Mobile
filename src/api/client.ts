@@ -43,8 +43,12 @@ const PREFIXO_JAVA = '/api/v1';
 export const api: AxiosInstance = create({
   baseURL: config.urlJava + PREFIXO_JAVA,
 
-  /** Sem timeout, uma API fora do ar deixa a tela em "Carregando..." para sempre. */
-  timeout: 15000,
+  /**
+   * Sem timeout, uma API fora do ar deixa a tela em "Carregando..." para sempre.
+   * 70 s porque o Render gratuito leva ate 1 minuto para acordar a API Java
+   * depois de parada; com menos, o primeiro login da demo sempre falharia.
+   */
+  timeout: 70000,
 
   headers: { 'Content-Type': 'application/json' },
 });
@@ -141,7 +145,8 @@ function traduzirErro(erro: AxiosError): AppError {
   if (erro.code === 'ECONNABORTED') {
     return new AppError({
       tipo: 'TIMEOUT',
-      mensagem: 'O servidor demorou para responder. Tente novamente.',
+      mensagem:
+        'O servidor estava parado e está acordando, isso pode levar até 1 minuto. Tente de novo.',
     });
   }
 

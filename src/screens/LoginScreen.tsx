@@ -16,6 +16,7 @@ import { Texto } from '../components/Texto';
 import { config } from '../config/env';
 import { useAuth } from '../contexts/AuthContext';
 import { mensagemDoErro } from '../errors/AppError';
+import { MENSAGEM_ACORDANDO, useDemorou } from '../hooks/useDemorou';
 import { espaco } from '../lib/tema';
 import { temErros, validar, validarEmail, validarSenhaLogin } from '../lib/validacao';
 import { AuthStackParamList } from '../navigation/tipos';
@@ -29,6 +30,7 @@ export function LoginScreen({ navigation }: Props) {
   const [erros, setErros] = useState<{ email?: string; senha?: string }>({});
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const demorou = useDemorou(enviando);
   // Esta tela nao tem o cabecalho azul: a barra de status precisa de texto escuro.
   const focada = useIsFocused();
   const campoSenha = useRef<ComponentRef<typeof TextInput>>(null);
@@ -70,6 +72,7 @@ export function LoginScreen({ navigation }: Props) {
 
       {avisoSessao ? <Aviso tipo="alerta" texto={avisoSessao} /> : null}
       {erroGeral ? <Aviso tipo="perigo" texto={erroGeral} /> : null}
+      {demorou ? <Aviso tipo="info" texto={MENSAGEM_ACORDANDO} /> : null}
 
       <View style={e.formulario}>
         <CampoTexto

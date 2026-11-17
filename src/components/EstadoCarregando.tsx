@@ -13,10 +13,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { MENSAGEM_ACORDANDO, useDemorou } from '../hooks/useDemorou';
 import { cores, espaco, tipografia } from '../lib/tema';
 
 export function EstadoCarregando({ mensagem = 'Carregando...' }: { mensagem?: string }) {
   const opacidade = useSharedValue(1);
+  // Passou de alguns segundos: quase sempre e o servidor acordando.
+  const demorou = useDemorou(true);
+  const texto = demorou ? MENSAGEM_ACORDANDO : mensagem;
 
   useEffect(() => {
     opacidade.set(
@@ -30,9 +34,9 @@ export function EstadoCarregando({ mensagem = 'Carregando...' }: { mensagem?: st
   const estiloAnimado = useAnimatedStyle(() => ({ opacity: opacidade.get() }));
 
   return (
-    <View style={e.container} accessibilityRole="progressbar" accessibilityLabel={mensagem}>
+    <View style={e.container} accessibilityRole="progressbar" accessibilityLabel={texto}>
       <ActivityIndicator size="large" color={cores.primaria} />
-      <Animated.Text style={[e.texto, estiloAnimado]}>{mensagem}</Animated.Text>
+      <Animated.Text style={[e.texto, estiloAnimado]}>{texto}</Animated.Text>
     </View>
   );
 }
