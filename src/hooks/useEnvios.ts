@@ -58,7 +58,9 @@ export function usePedirAnalise() {
           );
       return submeterEnvio(envio.id, params.chaveSubmeter);
     },
-    onSuccess: () => cliente.invalidateQueries({ queryKey: chavesEnvios.todos }),
+    // Tambem no erro: o POST pode ter criado o rascunho e so o submeter falhado.
+    // Recarregando, a proxima tentativa acha o rascunho e troca os documentos (PUT).
+    onSettled: () => cliente.invalidateQueries({ queryKey: chavesEnvios.todos }),
   });
 }
 

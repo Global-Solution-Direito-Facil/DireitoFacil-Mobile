@@ -13,7 +13,7 @@ import { EstadoErro } from '../components/EstadoErro';
 import { Tela } from '../components/Tela';
 import { Texto } from '../components/Texto';
 import { useSnackbar } from '../contexts/SnackbarContext';
-import { mensagemDoErro } from '../errors/AppError';
+import { AppError, mensagemDoErro } from '../errors/AppError';
 import { useCaso } from '../hooks/useCasos';
 import { useDocumentos } from '../hooks/useDocumentos';
 import { useMeusEnvios, usePedirAnalise } from '../hooks/useEnvios';
@@ -86,6 +86,15 @@ export function PedirAnaliseScreen({ navigation, route }: Props) {
         onSuccess: () => {
           mostrar('Enviado para o assistente social.');
           navigation.goBack();
+        },
+        onError: (falha) => {
+          // O servidor respondeu: a proxima tentativa e outra acao e precisa de chaves
+          // novas (a .NET recusa a mesma chave com outro conteudo). Sem resposta
+          // (rede, timeout), as chaves ficam: repetir nao duplica o envio.
+          if (falha instanceof AppError && falha.status) {
+            chaveCriar.current = novaChaveIdempotencia();
+            chaveSubmeter.current = novaChaveIdempotencia();
+          }
         },
       },
     );
