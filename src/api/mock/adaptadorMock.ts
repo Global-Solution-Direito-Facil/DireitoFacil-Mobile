@@ -83,6 +83,18 @@ function pessoaVisivel(u: UsuarioMock, id: number) {
   return pessoa;
 }
 
+/** UsuarioResponse do Java (GET /usuarios/me). */
+function contaApi(u: UsuarioMock) {
+  return {
+    id: u.id,
+    nome: u.nome,
+    cpf: u.cpf,
+    email: u.email,
+    perfil: u.papel,
+    dataCadastro: '2026-11-01T10:00:00',
+  };
+}
+
 function receitaVisivel(u: UsuarioMock, id: number): ReceitaApi {
   const receita = db.receitas.find((r) => r.id === id);
   if (!receita) throw new ErroHttp(404, 'Receita não encontrada.');
@@ -351,6 +363,32 @@ const rotas: Rota[] = [
       db.usuarios.push(u);
       return { status: 201, data: respostaLogin(u) };
     },
+  },
+
+  {
+    api: 'java',
+    metodo: 'PATCH',
+    padrao: /^\/auth\/senha$/,
+    tratar: ({ usuario, corpo }) => {
+      const u = usuario();
+      const novaSenha = String(corpo.novaSenha ?? '');
+      if (novaSenha.length < 8) {
+        throw new ErroHttp(400, 'A senha nova precisa de pelo menos 8 caracteres.', {
+          novaSenha: 'Pelo menos 8 caracteres.',
+        });
+      }
+      if (corpo.senhaAtual !== u.senha) {
+        throw new ErroHttp(422, 'A senha atual não confere.', { senhaAtual: 'Senha incorreta.' });
+      }
+      u.senha = novaSenha;
+      return { status: 204 };
+    },
+  },
+  {
+    api: 'java',
+    metodo: 'GET',
+    padrao: /^\/usuarios\/me$/,
+    tratar: ({ usuario }) => ({ data: contaApi(usuario()) }),
   },
 
   // Pessoas (Java)

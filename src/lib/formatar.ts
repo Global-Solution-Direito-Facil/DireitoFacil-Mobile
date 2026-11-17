@@ -97,3 +97,18 @@ export const mascaras = {
 export function primeiroNome(nome: string): string {
   return nome.trim().split(/\s+/)[0] ?? nome;
 }
+
+/** "Ana Paula Almeida" -> "AA": a primeira e a ultima inicial, para o avatar. */
+export function iniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/);
+  const primeira = partes[0]?.[0] ?? '';
+  const ultima = partes.length > 1 ? (partes[partes.length - 1]?.[0] ?? '') : '';
+  return (primeira + ultima).toUpperCase();
+}
+
+/** "12345678909" -> "***.456.789-**": o perfil mostra so o meio do CPF. */
+export function cpfParcial(cpf: string): string {
+  const numeros = cpf.replace(/\D/g, '');
+  if (numeros.length !== 11) return '***';
+  return `***.${numeros.slice(3, 6)}.${numeros.slice(6, 9)}-**`;
+}

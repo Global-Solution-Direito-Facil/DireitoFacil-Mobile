@@ -1,5 +1,4 @@
 /** Documentos enviados para a API .NET: listar, enviar e apagar. */
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { Aviso } from '../components/Aviso';
@@ -18,10 +17,10 @@ import { confirmar } from '../lib/confirmar';
 import { formatarData, formatarTamanho } from '../lib/formatar';
 import { statusDocumento, tipoDocumento } from '../lib/rotulos';
 import { cores, espaco } from '../lib/tema';
-import { CidadaoStackParamList } from '../navigation/tipos';
+import { CidadaoAbaProps } from '../navigation/tipos';
 import { Documento } from '../types/documento';
 
-type Props = NativeStackScreenProps<CidadaoStackParamList, 'Documentos'>;
+type Props = CidadaoAbaProps<'Documentos'>;
 
 export function DocumentosScreen({ navigation }: Props) {
   const documentos = useDocumentos();

@@ -1,5 +1,4 @@
 /** Fila do assistente social (papel GESTOR): envios por status. */
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
@@ -16,10 +15,10 @@ import { useFila } from '../hooks/useEnvios';
 import { formatarData } from '../lib/formatar';
 import { statusEnvio } from '../lib/rotulos';
 import { cores, espaco } from '../lib/tema';
-import { GestorStackParamList } from '../navigation/tipos';
+import { GestorAbaProps } from '../navigation/tipos';
 import { StatusEnvio } from '../types/documento';
 
-type Props = NativeStackScreenProps<GestorStackParamList, 'FilaAnalise'>;
+type Props = GestorAbaProps<'FilaAnalise'>;
 
 const FILTROS: { valor: StatusEnvio; texto: string }[] = [
   { valor: 'ENVIADO', texto: 'Aguardando' },

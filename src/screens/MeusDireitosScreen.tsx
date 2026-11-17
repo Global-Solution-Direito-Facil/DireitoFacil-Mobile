@@ -1,5 +1,4 @@
 /** Meus direitos: um caso por direito encontrado, com status, prazo e filtro. */
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
@@ -16,10 +15,10 @@ import { useCasos } from '../hooks/useCasos';
 import { diasAte, formatarData } from '../lib/formatar';
 import { resultadoAvaliacao, statusCaso } from '../lib/rotulos';
 import { cores, espaco } from '../lib/tema';
-import { CidadaoStackParamList } from '../navigation/tipos';
+import { CidadaoAbaProps } from '../navigation/tipos';
 import { Caso } from '../types/caso';
 
-type Props = NativeStackScreenProps<CidadaoStackParamList, 'MeusDireitos'>;
+type Props = CidadaoAbaProps<'MeusDireitos'>;
 type Filtro = 'TODOS' | 'ACAO' | 'ANDAMENTO' | 'ENCERRADOS';
 
 const FILTROS: { valor: Filtro; texto: string }[] = [

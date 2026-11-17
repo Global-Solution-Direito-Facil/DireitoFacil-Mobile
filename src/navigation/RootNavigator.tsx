@@ -9,20 +9,28 @@
  *   3. CIDADAO           so as telas do cidadao existem
  *   4. GESTOR            so as telas do assistente social existem
  *
+ * Cidadao e gestor tem uma BARRA DE ABAS embaixo com as telas principais. Ela
+ * e a primeira tela do stack; os detalhes abrem por cima e cobrem a barra.
+ *
  * Nenhum `navigate('Login')` depois do logout: as telas deixam de existir.
  * Assim o "voltar" do Android nunca leva quem saiu para uma tela interna, e
  * um cidadao nao alcanca a fila do gestor nem digitando a rota.
  * ---------------------------------------------------------------------------
  */
 
+import {
+  BottomTabNavigationOptions,
+  createBottomTabNavigator,
+} from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import {
   NativeStackNavigationOptions,
   createNativeStackNavigator,
 } from '@react-navigation/native-stack';
 
-import { BotaoPerfil } from '../components/BotaoPerfil';
 import { EstadoCarregando } from '../components/EstadoCarregando';
+import { NomeIcone } from '../components/Icone';
+import { IconeAba } from '../components/IconeAba';
 import { useAuth } from '../contexts/AuthContext';
 import { cores, fontes } from '../lib/tema';
 import { AnaliseEnvioScreen } from '../screens/AnaliseEnvioScreen';
@@ -40,11 +48,20 @@ import { PessoaFormScreen } from '../screens/PessoaFormScreen';
 import { PessoaScreen } from '../screens/PessoaScreen';
 import { ReceitaScreen } from '../screens/ReceitaScreen';
 import { SobreScreen } from '../screens/SobreScreen';
-import { AuthStackParamList, CidadaoStackParamList, GestorStackParamList } from './tipos';
+import { TrocarSenhaScreen } from '../screens/TrocarSenhaScreen';
+import {
+  AuthStackParamList,
+  CidadaoAbasParamList,
+  CidadaoStackParamList,
+  GestorAbasParamList,
+  GestorStackParamList,
+} from './tipos';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const CidadaoStack = createNativeStackNavigator<CidadaoStackParamList>();
+const CidadaoAbas = createBottomTabNavigator<CidadaoAbasParamList>();
 const GestorStack = createNativeStackNavigator<GestorStackParamList>();
+const GestorAbas = createBottomTabNavigator<GestorAbasParamList>();
 
 const cabecalho: NativeStackNavigationOptions = {
   headerStyle: { backgroundColor: cores.primaria },
@@ -53,6 +70,78 @@ const cabecalho: NativeStackNavigationOptions = {
   headerBackButtonDisplayMode: 'minimal',
   contentStyle: { backgroundColor: cores.fundo },
 };
+
+/** Mesmo cabecalho azul nas abas, e a barra branca com a aba ativa em azul. */
+const abas: BottomTabNavigationOptions = {
+  headerStyle: { backgroundColor: cores.primaria },
+  headerTintColor: cores.textoSobrePrimaria,
+  headerTitleStyle: { fontFamily: fontes.tituloMedio },
+  headerTitleAlign: 'left',
+  sceneStyle: { backgroundColor: cores.fundo },
+  tabBarActiveTintColor: cores.primaria,
+  tabBarInactiveTintColor: cores.textoFraco,
+  tabBarLabelStyle: { fontFamily: fontes.textoForte, fontSize: 12 },
+  tabBarStyle: { backgroundColor: cores.superficie, borderTopColor: cores.borda },
+  tabBarItemStyle: { paddingTop: 6 },
+};
+
+/** Opcoes de uma aba: titulo do cabecalho, rotulo curto e os dois icones. */
+function aba(
+  titulo: string,
+  rotulo: string,
+  nome: NomeIcone,
+  nomeAtivo: NomeIcone,
+): BottomTabNavigationOptions {
+  return {
+    title: titulo,
+    tabBarLabel: rotulo,
+    tabBarIcon: ({ focused }) => <IconeAba focado={focused} nome={nome} nomeAtivo={nomeAtivo} />,
+  };
+}
+
+function AbasCidadao() {
+  return (
+    <CidadaoAbas.Navigator screenOptions={abas} backBehavior="firstRoute">
+      <CidadaoAbas.Screen
+        name="Inicio"
+        component={InicioScreen}
+        options={aba('Direito Fácil', 'Início', 'home-outline', 'home')}
+      />
+      <CidadaoAbas.Screen
+        name="MeusDireitos"
+        component={MeusDireitosScreen}
+        options={aba('Meus direitos', 'Direitos', 'scale-balance', 'scale-balance')}
+      />
+      <CidadaoAbas.Screen
+        name="Documentos"
+        component={DocumentosScreen}
+        options={aba('Documentos', 'Documentos', 'file-document-outline', 'file-document')}
+      />
+      <CidadaoAbas.Screen
+        name="Perfil"
+        component={PerfilScreen}
+        options={aba('Perfil', 'Perfil', 'account-circle-outline', 'account-circle')}
+      />
+    </CidadaoAbas.Navigator>
+  );
+}
+
+function AbasGestor() {
+  return (
+    <GestorAbas.Navigator screenOptions={abas} backBehavior="firstRoute">
+      <GestorAbas.Screen
+        name="FilaAnalise"
+        component={FilaAnaliseScreen}
+        options={aba('Fila de análise', 'Fila', 'inbox-outline', 'inbox')}
+      />
+      <GestorAbas.Screen
+        name="Perfil"
+        component={PerfilScreen}
+        options={aba('Perfil', 'Perfil', 'account-circle-outline', 'account-circle')}
+      />
+    </GestorAbas.Navigator>
+  );
+}
 
 export function RootNavigator() {
   const { usuario, carregandoSessao } = useAuth();
@@ -87,31 +176,22 @@ export function RootNavigator() {
   if (usuario.papel === 'GESTOR') {
     return (
       <NavigationContainer>
-        <GestorStack.Navigator
-          screenOptions={({ navigation }) => ({
-            ...cabecalho,
-            headerRight: () => <BotaoPerfil aoTocar={() => navigation.navigate('Perfil')} />,
-          })}
-        >
-          <GestorStack.Screen
-            name="FilaAnalise"
-            component={FilaAnaliseScreen}
-            options={{ title: 'Fila de análise' }}
-          />
+        <GestorStack.Navigator screenOptions={cabecalho}>
+          <GestorStack.Screen name="Abas" component={AbasGestor} options={{ headerShown: false }} />
           <GestorStack.Screen
             name="AnaliseEnvio"
             component={AnaliseEnvioScreen}
             options={({ route }) => ({ title: route.params.nome })}
           />
           <GestorStack.Screen
-            name="Perfil"
-            component={PerfilScreen}
-            options={{ title: 'Perfil', headerRight: undefined }}
+            name="TrocarSenha"
+            component={TrocarSenhaScreen}
+            options={{ title: 'Trocar senha', presentation: 'modal' }}
           />
           <GestorStack.Screen
             name="Sobre"
             component={SobreScreen}
-            options={{ title: 'Sobre o app', headerRight: undefined }}
+            options={{ title: 'Sobre o app' }}
           />
         </GestorStack.Navigator>
       </NavigationContainer>
@@ -121,17 +201,8 @@ export function RootNavigator() {
   // ---- 3. Cidadao -------------------------------------------------------------
   return (
     <NavigationContainer>
-      <CidadaoStack.Navigator
-        screenOptions={({ navigation }) => ({
-          ...cabecalho,
-          headerRight: () => <BotaoPerfil aoTocar={() => navigation.navigate('Perfil')} />,
-        })}
-      >
-        <CidadaoStack.Screen
-          name="Inicio"
-          component={InicioScreen}
-          options={{ title: 'Direito Fácil' }}
-        />
+      <CidadaoStack.Navigator screenOptions={cabecalho}>
+        <CidadaoStack.Screen name="Abas" component={AbasCidadao} options={{ headerShown: false }} />
         <CidadaoStack.Screen
           name="Pessoa"
           component={PessoaScreen}
@@ -143,13 +214,7 @@ export function RootNavigator() {
           options={({ route }) => ({
             title: route.params?.id ? 'Editar familiar' : 'Novo familiar',
             presentation: 'modal',
-            headerRight: undefined,
           })}
-        />
-        <CidadaoStack.Screen
-          name="MeusDireitos"
-          component={MeusDireitosScreen}
-          options={{ title: 'Meus direitos' }}
         />
         <CidadaoStack.Screen
           name="Direito"
@@ -157,19 +222,14 @@ export function RootNavigator() {
           options={({ route }) => ({ title: route.params.nome })}
         />
         <CidadaoStack.Screen
-          name="Documentos"
-          component={DocumentosScreen}
-          options={{ title: 'Documentos' }}
-        />
-        <CidadaoStack.Screen
           name="NovoDocumento"
           component={NovoDocumentoScreen}
-          options={{ title: 'Enviar documento', presentation: 'modal', headerRight: undefined }}
+          options={{ title: 'Enviar documento', presentation: 'modal' }}
         />
         <CidadaoStack.Screen
           name="PedirAnalise"
           component={PedirAnaliseScreen}
-          options={{ title: 'Pedir análise', presentation: 'modal', headerRight: undefined }}
+          options={{ title: 'Pedir análise', presentation: 'modal' }}
         />
         <CidadaoStack.Screen
           name="Receita"
@@ -177,14 +237,14 @@ export function RootNavigator() {
           options={{ title: 'Minha receita' }}
         />
         <CidadaoStack.Screen
-          name="Perfil"
-          component={PerfilScreen}
-          options={{ title: 'Perfil', headerRight: undefined }}
+          name="TrocarSenha"
+          component={TrocarSenhaScreen}
+          options={{ title: 'Trocar senha', presentation: 'modal' }}
         />
         <CidadaoStack.Screen
           name="Sobre"
           component={SobreScreen}
-          options={{ title: 'Sobre o app', headerRight: undefined }}
+          options={{ title: 'Sobre o app' }}
         />
       </CidadaoStack.Navigator>
     </NavigationContainer>

@@ -7,7 +7,6 @@
  * Material), e nao em cartoes iguais empilhados: lista e para escolher,
  * cartao e para conteudo.
  */
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Fragment } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -28,9 +27,9 @@ import { usePessoas } from '../hooks/usePessoas';
 import { entradaDaLista } from '../lib/animacoes';
 import { formatarMoeda, primeiroNome } from '../lib/formatar';
 import { AREA_TOQUE, cores, elevacao, espaco, raio } from '../lib/tema';
-import { CidadaoStackParamList } from '../navigation/tipos';
+import { CidadaoAbaProps } from '../navigation/tipos';
 
-type Props = NativeStackScreenProps<CidadaoStackParamList, 'Inicio'>;
+type Props = CidadaoAbaProps<'Inicio'>;
 
 const CAMINHOS: {
   tela: 'MeusDireitos' | 'Documentos' | 'Receita';
