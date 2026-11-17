@@ -50,9 +50,9 @@ export const api: AxiosInstance = create({
 });
 
 /**
- * Prefixo das rotas da API .NET: /api/v1, igual ao Java. Vem de
- * EXPO_PUBLIC_DOTNET_API_PREFIX (ver config/env.ts) para dar para voltar a
- * /api sem mexer no codigo enquanto a .NET nao migra.
+ * Prefixo das rotas da API .NET: /api (Controllers, como esta no Azure). Vem
+ * de EXPO_PUBLIC_DOTNET_API_PREFIX (ver config/env.ts) para trocar sem mexer
+ * no codigo.
  */
 export const API_DOTNET: AxiosRequestConfig = {
   baseURL: config.urlDotnet + config.prefixoDotnet,
