@@ -23,39 +23,42 @@ Link em breve.
 
 O app segue a arquitetura e as bibliotecas do app de referência das aulas (`mockmerce-app`):
 
-| Peça               | Biblioteca                                                               |
-| ------------------ | ------------------------------------------------------------------------ |
-| Navegação          | React Navigation (`native-stack`) com guarda de rotas                    |
-| Estado de servidor | TanStack Query (`useQuery` e `useMutation`)                              |
-| HTTP               | Axios, com **uma** instância e interceptors                              |
-| Credencial         | `expo-secure-store` (token)                                              |
-| Dado local         | `@react-native-async-storage/async-storage` (nome e papel do usuário)    |
-| Animação           | `react-native-reanimated` (toque e carregamento)                         |
-| Câmera e galeria   | `expo-image-picker`                                                      |
-| Ícones             | `@expo/vector-icons` (Material Design Icons, o conjunto do próprio Expo) |
-| Fontes             | `expo-font`, com os arquivos em `assets/fonts`                           |
+| Peça               | Biblioteca                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| Navegação          | React Navigation (`native-stack` + `bottom-tabs`) com guarda de rotas e barra de abas |
+| Estado de servidor | TanStack Query (`useQuery` e `useMutation`)                                           |
+| HTTP               | Axios, com **uma** instância e interceptors                                           |
+| Credencial         | `expo-secure-store` (token)                                                           |
+| Dado local         | `@react-native-async-storage/async-storage` (nome e papel do usuário)                 |
+| Animação           | `react-native-reanimated` (toque e carregamento)                                      |
+| Câmera e galeria   | `expo-image-picker`                                                                   |
+| Ícones             | `@expo/vector-icons` (Material Design Icons, o conjunto do próprio Expo)              |
+| Fontes             | `expo-font`, com os arquivos em `assets/fonts`                                        |
 
 Expo SDK 58, a versão que o Expo Go atual abre.
 
 ## Telas
 
-| #   | Tela                 | Papel   | O que faz                                                                       |
-| --- | -------------------- | ------- | ------------------------------------------------------------------------------- |
-| 1   | Login                | público | Login real (JWT), validação e carregamento                                      |
-| 2   | Cadastro             | público | Cria a conta (nome, CPF validado, e-mail, senha) e já entra                     |
-| 3   | Início               | cidadão | Família, resumo dos pedidos e atalhos                                           |
-| 4   | Familiar             | cidadão | Dados, laudos e direitos de uma pessoa; editar e excluir                        |
-| 5   | Novo/editar familiar | cidadão | Formulário com máscaras, validação e renda individual (POST e PUT)              |
-| 6   | Meus direitos        | cidadão | Casos com status, prazo, filtro e puxar para atualizar                          |
-| 7   | Detalhe do direito   | cidadão | Linha do tempo do pedido, resultado da regra, passo a passo da IA e fonte legal |
-| 8   | Documentos           | cidadão | Documentos enviados; apagar                                                     |
-| 9   | Enviar documento     | cidadão | Câmera ou galeria, consentimento LGPD, `Idempotency-Key`                        |
-| 10  | Pedir análise        | cidadão | Monta o envio do caso com os documentos e manda para o assistente social        |
-| 11  | Minha receita        | cidadão | Familiar → foto da receita → conferência → Farmácia Popular                     |
-| 12  | Perfil               | todos   | Conta, "Sobre o app" e sair                                                     |
-| 13  | Fila de análise      | gestor  | Envios aguardando, devolvidos e aprovados                                       |
-| 14  | Analisar envio       | gestor  | Aprovar ou devolver com observação                                              |
-| —   | Sobre o app          | todos   | Versão e **hash do commit** do build (não conta nas telas)                      |
+| #   | Tela                 | Papel   | O que faz                                                                                                               |
+| --- | -------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 1   | Login                | público | Login real (JWT), validação e carregamento                                                                              |
+| 2   | Cadastro             | público | Cria a conta (nome, CPF validado, e-mail, senha) e já entra                                                             |
+| 3   | Início               | cidadão | Família, resumo dos pedidos e atalhos                                                                                   |
+| 4   | Familiar             | cidadão | Dados, laudos e direitos de uma pessoa; editar e excluir                                                                |
+| 5   | Novo/editar familiar | cidadão | Formulário com máscaras, validação e renda individual (POST e PUT)                                                      |
+| 6   | Meus direitos        | cidadão | Casos com status, prazo, filtro e puxar para atualizar                                                                  |
+| 7   | Detalhe do direito   | cidadão | Linha do tempo do pedido, resultado da regra, passo a passo da IA e fonte legal                                         |
+| 8   | Documentos           | cidadão | Documentos enviados; apagar                                                                                             |
+| 9   | Enviar documento     | cidadão | Câmera ou galeria, consentimento LGPD, `Idempotency-Key`                                                                |
+| 10  | Pedir análise        | cidadão | Monta o envio do caso com os documentos e manda para o assistente social                                                |
+| 11  | Minha receita        | cidadão | Familiar → foto da receita → conferência → Farmácia Popular                                                             |
+| 12  | Perfil               | todos   | Dados da conta (`GET /api/v1/usuarios/me`, CPF parcial), resumo da família ou da fila, privacidade, trocar senha e sair |
+| 13  | Fila de análise      | gestor  | Envios aguardando, devolvidos e aprovados                                                                               |
+| 14  | Analisar envio       | gestor  | Aprovar ou devolver com observação                                                                                      |
+| 15  | Trocar senha         | todos   | Senha atual e nova (`PATCH /api/v1/auth/senha`); senha atual errada mostra o erro no campo                              |
+| —   | Sobre o app          | todos   | Versão e **hash do commit** do build (não conta nas telas)                                                              |
+
+As telas principais ficam numa **barra de abas** embaixo: Início, Direitos, Documentos e Perfil para o cidadão; Fila e Perfil para o gestor. Os detalhes abrem por cima e cobrem a barra.
 
 ## Resultado da regra, em linguagem simples
 
@@ -71,15 +74,15 @@ Expo SDK 58, a versão que o Expo Go atual abre.
 
 ## Requisitos da disciplina
 
-| Requisito                                   | Onde está                                                                                                                                                                                                                                                              |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 6+ telas com navegação                      | `src/navigation/RootNavigator.tsx`                                                                                                                                                                                                                                     |
-| CRUD via API, com erro, loaders e mensagens | Familiares: criar, ler, editar e excluir (`/api/v1/pessoas`, Java). Documentos: enviar, listar e apagar (`/api/v1/documentos`, .NET). Envios: criar, submeter, aprovar e devolver (`/api/v1/envios`, .NET). Camada própria em `src/api` + `src/services` + `src/hooks` |
-| Autenticação                                | `src/contexts/AuthContext.tsx`: cadastro, login, logout que apaga token, dados e cache, sessão que sobrevive a fechar o app, e `401` da API Java que derruba a sessão de qualquer tela                                                                                 |
-| Rotas protegidas                            | Quatro caminhos no `RootNavigator`: lendo a sessão, sem sessão, cidadão e gestor. As telas de um papel não existem para o outro                                                                                                                                        |
-| Identidade visual                           | `src/lib/tema.ts` (cores, fontes, espaços), `assets/fonts` (Lexend e Atkinson Hyperlegible, licença OFL), ícone e ilustrações próprias em `assets/`                                                                                                                    |
-| Arquitetura                                 | Pastas por responsabilidade (abaixo), ESLint + Prettier, TypeScript estrito e a regra de camadas no lint                                                                                                                                                               |
-| Publicação                                  | Firebase App Distribution e tela "Sobre o app" com o hash do commit, calculado no build                                                                                                                                                                                |
+| Requisito                                   | Onde está                                                                                                                                                                                                                                                        |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 6+ telas com navegação                      | `src/navigation/RootNavigator.tsx`                                                                                                                                                                                                                               |
+| CRUD via API, com erro, loaders e mensagens | Familiares: criar, ler, editar e excluir (`/api/v1/pessoas`, Java). Documentos: enviar, listar e apagar (`/api/documentos`, .NET). Envios: criar, submeter, aprovar e devolver (`/api/envios`, .NET). Camada própria em `src/api` + `src/services` + `src/hooks` |
+| Autenticação                                | `src/contexts/AuthContext.tsx`: cadastro, login, logout que apaga token, dados e cache, sessão que sobrevive a fechar o app, e `401` da API Java que derruba a sessão de qualquer tela                                                                           |
+| Rotas protegidas                            | Quatro caminhos no `RootNavigator`: lendo a sessão, sem sessão, cidadão e gestor. As telas de um papel não existem para o outro                                                                                                                                  |
+| Identidade visual                           | `src/lib/tema.ts` (cores, fontes, espaços), `assets/fonts` (Lexend e Atkinson Hyperlegible, licença OFL), ícone e ilustrações próprias em `assets/`                                                                                                              |
+| Arquitetura                                 | Pastas por responsabilidade (abaixo), ESLint + Prettier, TypeScript estrito e a regra de camadas no lint                                                                                                                                                         |
+| Publicação                                  | Firebase App Distribution e tela "Sobre o app" com o hash do commit, calculado no build                                                                                                                                                                          |
 
 ## Arquitetura em camadas
 
@@ -113,16 +116,23 @@ docs/
 
 ### Duas APIs, um cliente
 
-| API                | Responsável      | Rotas                                                                                                                                                               |
-| ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Java (Spring Boot) | Biribilli e Alex | `POST /api/v1/auth/login`, `POST /api/v1/auth/registrar`, `/api/v1/pessoas`, `/api/v1/pessoas/{id}/laudos`, `/api/v1/casos`, `/api/v1/direitos`, `/api/v1/receitas` |
-| .NET (Azure)       | Pietro           | `/api/v1/documentos` (upload com `Idempotency-Key`), `/api/v1/envios`, `/api/v1/envios/{id}/submeter`, `/api/v1/envios/{id}/analise`                                |
+| API                                                     | Responsável      | Rotas                                                                                                                                                                                                                      |
+| ------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Java (Spring Boot) no Render                            | Biribilli e Alex | `POST /api/v1/auth/login`, `POST /api/v1/auth/registrar`, `PATCH /api/v1/auth/senha`, `GET /api/v1/usuarios/me`, `/api/v1/pessoas`, `/api/v1/pessoas/{id}/laudos`, `/api/v1/casos`, `/api/v1/direitos`, `/api/v1/receitas` |
+| ASP.NET Core Web API (Controllers) no Azure App Service | Pietro           | `/api/documentos` (upload com `Idempotency-Key`), `/api/envios`, `/api/envios/{id}/submeter`, `/api/envios/{id}/analise`                                                                                                   |
 
 O login acontece no Java e a API .NET aceita o mesmo token (nos dois, o `sub` é o e-mail). Por isso um interceptor só coloca o `Authorization` nas duas.
 
 Só o `401` da API Java, que emite o token, encerra a sessão. Um `401` da .NET vira uma mensagem de erro na tela: durante a integração é comum a configuração do JWT ficar diferente entre as APIs, e o app não deve deslogar a pessoa a cada upload por causa disso.
 
-As duas APIs usam o prefixo `/api/v1`. O do Java fica em `PREFIXO_JAVA` (`src/api/client.ts`); o da .NET vem de `EXPO_PUBLIC_DOTNET_API_PREFIX`, com padrão `/api/v1`.
+O Java usa o prefixo `/api/v1`, fixo em `PREFIXO_JAVA` (`src/api/client.ts`). A .NET usa `/api`, que vem de `EXPO_PUBLIC_DOTNET_API_PREFIX` (padrão `/api`).
+
+Endereços publicados:
+
+- Java: https://direitofacil-java.onrender.com (rotas em `/api/v1`)
+- .NET: https://direitofacil-rm561378.azurewebsites.net (rotas em `/api`)
+
+O Render gratuito desliga a API Java quando ela fica parada, e a primeira chamada depois disso leva até 1 minuto. Por isso o timeout do Axios é de 70 segundos e, depois de alguns segundos esperando, o login e as telas de carregamento avisam que o servidor está acordando.
 
 ### Modo demonstração
 
@@ -170,18 +180,20 @@ Leia o QR code com o Expo Go ou aperte `a` no terminal para abrir no emulador An
 
 ### Variáveis de ambiente
 
-| Variável                        | Valores             | Para quê                                                                                                    |
-| ------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `EXPO_PUBLIC_DATA_SOURCE`       | `mock` ou `api`     | Dados de demonstração ou APIs reais                                                                         |
-| `EXPO_PUBLIC_JAVA_API_URL`      | URL                 | API Java, sem o `/api/v1` no fim (o app coloca). No emulador Android, `http://10.0.2.2:8080` é o computador |
-| `EXPO_PUBLIC_DOTNET_API_PREFIX` | `/api/v1` ou `/api` | Opcional. Prefixo das rotas da .NET (padrão `/api/v1`)                                                      |
-| `EXPO_PUBLIC_DOTNET_API_URL`    | URL                 | API .NET, sem o prefixo no fim. Rodando local, `http://10.0.2.2:5264`                                       |
+| Variável                        | Valores         | Para quê                                                                                                    |
+| ------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_DATA_SOURCE`       | `mock` ou `api` | Dados de demonstração ou APIs reais                                                                         |
+| `EXPO_PUBLIC_JAVA_API_URL`      | URL             | API Java, sem o `/api/v1` no fim (o app coloca). No emulador Android, `http://10.0.2.2:8080` é o computador |
+| `EXPO_PUBLIC_DOTNET_API_PREFIX` | `/api`          | Opcional. Prefixo das rotas da .NET (padrão `/api`)                                                         |
+| `EXPO_PUBLIC_DOTNET_API_URL`    | URL             | API .NET, sem o prefixo no fim. Rodando local, `http://10.0.2.2:5264`                                       |
 
 Depois de mudar o `.env`, reinicie com `npx expo start --clear`. Nada secreto vai nessas variáveis: tudo que começa com `EXPO_PUBLIC_` fica dentro do app.
 
-### Contas de teste (modo demonstração)
+### Contas de teste
 
-Todos os dados são **fictícios**, os mesmos da carga do banco (repositório `DireitoFacil-DB`: 20 direitos e 31 casos). Senha de todos: `Senha@123`.
+As mesmas contas funcionam no modo demonstração e nas APIs publicadas. Todos os dados são **fictícios**, os da carga do banco (repositório `DireitoFacil-DB`: 20 direitos e 31 casos). Senha de todos: `Senha@123`.
+
+Para a demonstração com as APIs publicadas, use a Ana (cidadã) e a Rafaela (gestora): a Ana tem um único familiar, o Lucas, e é assim que o Java liga o laudo enviado à pessoa certa.
 
 | E-mail                      | Papel   | Família                        | Direitos                           |
 | --------------------------- | ------- | ------------------------------ | ---------------------------------- |
