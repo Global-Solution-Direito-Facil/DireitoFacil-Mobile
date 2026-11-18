@@ -9,9 +9,13 @@ Famílias de pessoas com autismo (TEA), com deficiência (PcD) e idosos de baixa
 <table>
   <tr>
     <td align="center"><img src="docs/telas/01-login.png" width="200" alt="Tela de login" /><br />Login</td>
-    <td align="center"><img src="docs/telas/02-meus-direitos.png" width="200" alt="Lista Meus direitos" /><br />Meus direitos</td>
-    <td align="center"><img src="docs/telas/03-detalhe-do-direito.png" width="200" alt="Detalhe do direito com a linha do tempo do pedido" /><br />Detalhe do direito</td>
-    <td align="center"><img src="docs/telas/04-receita.png" width="200" alt="Resultado da consulta da receita na Farmácia Popular" /><br />Minha receita</td>
+    <td align="center"><img src="docs/telas/02-inicio.png" width="200" alt="Início com a família, os pedidos e a barra de abas" /><br />Início</td>
+    <td align="center"><img src="docs/telas/03-meus-direitos.png" width="200" alt="Lista Meus direitos com filtros e status" /><br />Meus direitos</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/telas/04-detalhe-do-direito.png" width="200" alt="Detalhe do direito com a linha do tempo do pedido e o passo a passo" /><br />Detalhe do direito</td>
+    <td align="center"><img src="docs/telas/05-receita.png" width="200" alt="Resultado da consulta da receita na Farmácia Popular" /><br />Minha receita</td>
+    <td align="center"><img src="docs/telas/06-perfil.png" width="200" alt="Perfil com dados da conta e resumo da família" /><br />Perfil</td>
   </tr>
 </table>
 
@@ -19,22 +23,35 @@ Famílias de pessoas com autismo (TEA), com deficiência (PcD) e idosos de baixa
 
 Link em breve.
 
+## Acesso para testar
+
+O app já vem ligado às APIs publicadas. Basta instalar o APK e entrar com uma destas contas:
+
+| Papel         | E-mail                      | Senha       |
+| ------------- | --------------------------- | ----------- |
+| Cidadão       | `ana.almeida@email.com`     | `Senha@123` |
+| Gestor (CRAS) | `rafaela.gomes@cras.gov.br` | `Senha@123` |
+
+Também dá para criar uma conta nova na tela de cadastro. Os dados são fictícios. Outras contas estão em [Contas de teste](#contas-de-teste).
+
+> Se o app ficar parado na primeira entrada, aguarde: a API Java fica no plano gratuito do Render, que desliga quando não é usada e leva até 1 minuto para voltar.
+
 ## Base técnica
 
 O app segue a arquitetura e as bibliotecas do app de referência das aulas (`mockmerce-app`):
 
-| Peça               | Biblioteca                                                                            |
-| ------------------ | ------------------------------------------------------------------------------------- |
-| Navegação          | React Navigation (`native-stack` + `bottom-tabs`) com guarda de rotas e barra de abas |
-| Estado de servidor | TanStack Query (`useQuery` e `useMutation`)                                           |
-| HTTP               | Axios, com **uma** instância e interceptors                                           |
-| Credencial         | `expo-secure-store` (token)                                                           |
-| Dado local         | `@react-native-async-storage/async-storage` (nome e papel do usuário)                 |
-| Animação           | `react-native-reanimated` (toque e carregamento)                                      |
-| Câmera e galeria   | `expo-image-picker`                                                                   |
-| Ícones             | `@expo/vector-icons` (Material Design Icons, o conjunto do próprio Expo)              |
-| Fontes             | `expo-font`, com os arquivos em `assets/fonts`                                        |
-| Notificação        | `expo-notifications` (notificação local, sem push e sem Firebase)                     |
+| Peça               | Biblioteca                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| Navegação          | React Navigation (`native-stack` + `bottom-tabs`) com guarda de rotas e barra de abas   |
+| Estado de servidor | TanStack Query (`useQuery` e `useMutation`)                                             |
+| HTTP               | Axios, com **uma** instância e interceptors                                             |
+| Credencial         | `expo-secure-store` (token)                                                             |
+| Dado local         | `@react-native-async-storage/async-storage` (nome e papel do usuário, avisos já vistos) |
+| Animação           | `react-native-reanimated` (toque, carregamento, entrada das listas, abas e avisos)      |
+| Câmera e galeria   | `expo-image-picker`                                                                     |
+| Ícones             | `@expo/vector-icons` (Material Design Icons, o conjunto do próprio Expo)                |
+| Fontes             | `expo-font`, com os arquivos em `assets/fonts`                                          |
+| Notificação        | `expo-notifications` (notificação local, sem push e sem Firebase)                       |
 
 Expo SDK 58, a versão que o Expo Go atual abre.
 
@@ -83,7 +100,8 @@ As telas principais ficam numa **barra de abas** embaixo: Início, Direitos, Doc
 | Rotas protegidas                            | Quatro caminhos no `RootNavigator`: lendo a sessão, sem sessão, cidadão e gestor. As telas de um papel não existem para o outro                                                                                                                                  |
 | Identidade visual                           | `src/lib/tema.ts` (cores, fontes, espaços), `assets/fonts` (Lexend e Atkinson Hyperlegible, licença OFL), ícone e ilustrações próprias em `assets/`                                                                                                              |
 | Arquitetura                                 | Pastas por responsabilidade (abaixo), ESLint + Prettier, TypeScript estrito e a regra de camadas no lint                                                                                                                                                         |
-| Publicação                                  | Firebase App Distribution e tela "Sobre o app" com o hash do commit, calculado no build                                                                                                                                                                          |
+| Publicação                                  | APK gerado do commit final (ver [Gerar o APK](#gerar-o-apk)) e tela "Sobre o app" com o hash do commit, calculado no build                                                                                                                                       |
+| Vídeo                                       | [Vídeo de demonstração](#vídeo-de-demonstração), até 5 minutos                                                                                                                                                                                                   |
 
 ## Arquitetura em camadas
 
@@ -103,11 +121,11 @@ src/
   storage/     SecureStore (credencial) × AsyncStorage (dado) e a ponte do 401
   services/    "o que o app quer" -> "qual endpoint chamar"
   hooks/       estado de servidor com TanStack Query
-  contexts/    sessão (AuthContext) e snackbar
+  contexts/    sessão (AuthContext), avisos dos pedidos (AvisosContext) e snackbar
   navigation/  a guarda de rotas e os tipos de cada pilha
   components/  peças visuais reaproveitadas
   screens/     as telas
-  lib/         tema, queryClient, formatação, validação, rótulos, câmera, JWT
+  lib/         tema, animações, queryClient, formatação, validação, rótulos, câmera, JWT
 assets/
   fonts/       .ttf e licenças
   images/      logo e ilustração
@@ -204,7 +222,7 @@ Depois de mudar o `.env`, reinicie com `npx expo start --clear`. Nada secreto va
 
 As mesmas contas funcionam no modo demonstração e nas APIs publicadas. Todos os dados são **fictícios**, os da carga do banco (repositório `DireitoFacil-DB`: 20 direitos e 31 casos). Senha de todos: `Senha@123`.
 
-Para a demonstração com as APIs publicadas, use a Ana (cidadã) e a Rafaela (gestora): a Ana tem um único familiar, o Lucas, e é assim que o Java liga o laudo enviado à pessoa certa.
+Para a demonstração com as APIs publicadas, use a Ana (cidadã, mãe do Lucas) e a Rafaela (gestora): a Ana pede a análise de um direito do Lucas e a Rafaela aprova ou devolve o pedido.
 
 | E-mail                      | Papel   | Família                        | Direitos                           |
 | --------------------------- | ------- | ------------------------------ | ---------------------------------- |
@@ -232,18 +250,42 @@ Para a demonstração com as APIs publicadas, use a Ana (cidadã) e a Rafaela (g
 3. **Logout limpa tudo.** Saia e entre com outra conta: nada da família anterior aparece.
 4. **Resultado possível.** Entre como `rita.barbosa@email.com` e abra o BPC: aparece "Pode ser que você tenha direito", com o motivo e o botão **Completar informação**.
 5. **Renda individual.** No cadastro da Rita, escolha "Não sei / prefiro não informar" e salve: o passe do idoso passa para "Pode ser que tenha direito".
-6. **Receita.** Em Minha receita, escolha o familiar e fotografe qualquer papel: a leitura de demonstração traz 4 remédios e o resultado mostra 2 de graça, 1 com dosagem diferente e 1 fora da lista.
+6. **Receita.** Em Minha receita, escolha o familiar e fotografe uma receita. Com as APIs, a IA lê os remédios da foto; confira a leitura e veja o resultado da Farmácia Popular. No modo demonstração, qualquer papel serve: a leitura traz 4 remédios e o resultado mostra 2 de graça, 1 com dosagem diferente e 1 fora da lista.
 7. **Aviso de decisão.** Entre como Ana, saia, entre como Rafaela e aprove o envio do Lucas. Volte como Ana: o Início mostra "Pedido aprovado" e a aba Direitos mostra 1. No APK, com a Ana logada e o app aberto, a notificação chega em até 1 minuto depois da decisão.
 8. **`401` derruba a sessão.** Com a API real, expire o token e puxe uma lista: o app volta para o login sozinho, com aviso. Um `401` só da API .NET mostra erro, sem deslogar.
 
-## Publicação (Firebase App Distribution)
+## Gerar o APK
 
-A versão publicada precisa ser igual ao código do commit mostrado em "Sobre o app". O hash **não é preenchido à mão**: o `app.config.js` lê o `git rev-parse --short HEAD` na hora do build (ou o `EAS_BUILD_GIT_COMMIT_HASH`, no EAS Build). Se houver arquivo alterado e não commitado, o hash aparece com o sufixo `-alterado`, e esse build não deve ser publicado.
+O app é entregue como APK. A versão entregue precisa ser igual ao código do commit mostrado em "Sobre o app". O hash **não é preenchido à mão**: o `app.config.js` lê o `git rev-parse --short HEAD` na hora do build (ou o `EAS_BUILD_GIT_COMMIT_HASH`, no EAS Build). Se houver arquivo alterado e não commitado, o hash aparece com o sufixo `-alterado`, e esse APK não deve ser entregue.
+
+Precisa do Android Studio instalado (ele traz o Android SDK e o JDK).
 
 1. Commite tudo e confira que `git status` está limpo.
-2. Gere o APK com `EXPO_PUBLIC_DATA_SOURCE=api`.
-3. Abra "Sobre o app" no APK e confira que o hash é igual ao de `git rev-parse --short HEAD`.
-4. Envie o APK ao Firebase App Distribution com o e-mail do professor como tester.
+2. Confira que o `.env` está com `EXPO_PUBLIC_DATA_SOURCE=api` e os endereços publicados.
+3. Gere o projeto Android nativo (a pasta `android/` fica fora do Git):
+
+   ```bash
+   npx expo prebuild --platform android --clean
+   ```
+
+4. O `prebuild` troca os scripts `android` e `ios` do `package.json`. Desfaça essa troca, senão o hash sai como `-alterado`:
+
+   ```bash
+   git checkout -- package.json
+   ```
+
+5. Compile o APK:
+
+   ```bash
+   cd android
+   ./gradlew assembleRelease
+   ```
+
+   No Prompt de Comando do Windows, use `gradlew assembleRelease`. O APK sai em `android/app/build/outputs/apk/release/app-release.apk`.
+
+6. Instale o APK no celular, abra "Sobre o app" e confira que o hash é igual ao de `git rev-parse --short HEAD`.
+
+No APK a notificação do sistema funciona (ver [Avisos dos pedidos](#avisos-dos-pedidos)): na primeira entrada, o Android pede permissão para notificar.
 
 ## Uso de IA generativa
 
