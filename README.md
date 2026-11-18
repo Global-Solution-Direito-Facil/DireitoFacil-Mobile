@@ -258,7 +258,22 @@ Para a demonstração com as APIs publicadas, use a Ana (cidadã, mãe do Lucas)
 
 O app é entregue como APK. A versão entregue precisa ser igual ao código do commit mostrado em "Sobre o app". O hash **não é preenchido à mão**: o `app.config.js` lê o `git rev-parse --short HEAD` na hora do build (ou o `EAS_BUILD_GIT_COMMIT_HASH`, no EAS Build). Se houver arquivo alterado e não commitado, o hash aparece com o sufixo `-alterado`, e esse APK não deve ser entregue.
 
-Precisa do Android Studio instalado (ele traz o Android SDK e o JDK).
+### Pelo EAS Build (o APK entregue)
+
+O APK entregue é gerado nos servidores do Expo, com o perfil `apk` do `eas.json`. Esse perfil já traz os endereços das APIs publicadas, porque o `.env` não sobe para o EAS.
+
+1. Commite tudo e confira que `git status` está limpo.
+2. Entre na conta Expo dona do projeto (`npx eas-cli login`) e rode:
+
+   ```bash
+   npx eas-cli build --platform android --profile apk
+   ```
+
+3. Baixe o APK pelo link que o comando mostra no fim, instale no celular, abra "Sobre o app" e confira que o hash é igual ao de `git rev-parse --short HEAD`.
+
+### No próprio computador
+
+Precisa do Android Studio instalado (ele traz o Android SDK e o JDK). No Windows, ative os caminhos longos do sistema (`LongPathsEnabled`): as partes nativas do React Native passam do limite de 260 caracteres.
 
 1. Commite tudo e confira que `git status` está limpo.
 2. Confira que o `.env` está com `EXPO_PUBLIC_DATA_SOURCE=api` e os endereços publicados.

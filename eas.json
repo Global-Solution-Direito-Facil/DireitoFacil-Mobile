@@ -1,0 +1,19 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "apk": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_DATA_SOURCE": "api",
+        "EXPO_PUBLIC_JAVA_API_URL": "https://direitofacil-java.onrender.com",
+        "EXPO_PUBLIC_DOTNET_API_URL": "https://direitofacil-rm561378.azurewebsites.net",
+        "EXPO_PUBLIC_DOTNET_API_PREFIX": "/api"
+      }
+    }
+  }
+}

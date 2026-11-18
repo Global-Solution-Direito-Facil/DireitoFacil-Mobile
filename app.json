@@ -51,6 +51,12 @@
           "color": "#1F4E8C"
         }
       ]
-    ]
+    ],
+    "owner": "kelsonz",
+    "extra": {
+      "eas": {
+        "projectId": "33a1c964-0a1f-43ab-9d62-d1b0cee69403"
+      }
+    }
   }
 }

@@ -4,8 +4,8 @@
  * ---------------------------------------------------------------------------
  * Le o app.json e acrescenta o hash do commit, calculado na hora do build.
  * Ninguem copia hash a mao: a tela "Sobre o app" sempre mostra o commit de
- * onde o app foi gerado, e e assim que se confere que a versao publicada no
- * Firebase App Distribution e igual ao codigo.
+ * onde o app foi gerado, e e assim que se confere que o APK entregue e igual
+ * ao codigo.
  *
  * Ordem de onde vem o hash:
  *   1. EAS_BUILD_GIT_COMMIT_HASH, que o EAS Build preenche sozinho
