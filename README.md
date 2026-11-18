@@ -21,7 +21,7 @@ Famílias de pessoas com autismo (TEA), com deficiência (PcD) e idosos de baixa
 
 ## Vídeo de demonstração
 
-Link em breve.
+[Assistir no YouTube](https://youtu.be/xBYRndzUo5E): o APK rodando no celular, ligado às APIs publicadas.
 
 ## Acesso para testar
 
@@ -35,6 +35,10 @@ O app já vem ligado às APIs publicadas. Basta instalar o APK e entrar com uma 
 Também dá para criar uma conta nova na tela de cadastro. Os dados são fictícios. Outras contas estão em [Contas de teste](#contas-de-teste).
 
 > Se o app ficar parado na primeira entrada, aguarde: a API Java fica no plano gratuito do Render, que desliga quando não é usada e leva até 1 minuto para voltar.
+
+> Na instalação, o Google Play Protect pode bloquear o APK, porque ele não veio da Play Store. Toque em **Mais detalhes** e depois em **Instalar mesmo assim**.
+
+> Para a receita e os documentos, prefira tirar a foto pela **câmera** do app. A API aceita só JPEG, PNG e PDF, e alguns celulares guardam as fotos da galeria em HEIC ou WEBP.
 
 ## Base técnica
 
@@ -270,6 +274,8 @@ O APK entregue é gerado nos servidores do Expo, com o perfil `apk` do `eas.json
    ```
 
 3. Baixe o APK pelo link que o comando mostra no fim, instale no celular, abra "Sobre o app" e confira que o hash é igual ao de `git rev-parse --short HEAD`.
+
+O APK entregue foi gerado do commit `5fefaac`. Os commits depois dele só mudam este README (link do vídeo e dicas de instalação), sem tocar no código do app.
 
 ### No próprio computador
 
