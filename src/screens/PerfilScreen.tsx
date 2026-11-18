@@ -12,12 +12,13 @@
  */
 import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Botao } from '../components/Botao';
 import { Cartao } from '../components/Cartao';
 import { Icone, NomeIcone } from '../components/Icone';
 import { LinhaInfo } from '../components/LinhaInfo';
+import { Pressionavel } from '../components/Pressionavel';
 import { Tela } from '../components/Tela';
 import { Texto } from '../components/Texto';
 import { useAuth } from '../contexts/AuthContext';
@@ -191,13 +192,15 @@ type NumeroProps = {
 function Numero({ valor, rotulo, icone, aoTocar }: NumeroProps) {
   const texto = valor === undefined ? '–' : String(valor);
   return (
-    <Pressable
+    // Mesmo retorno de toque do resto do app (encolhe um pouco); sem acao, fica parado.
+    <Pressionavel
       onPress={aoTocar}
       disabled={!aoTocar}
+      semAnimacao={!aoTocar}
       accessibilityRole={aoTocar ? 'button' : 'text'}
       accessibilityLabel={`${rotulo}: ${valor ?? 'carregando'}`}
       android_ripple={aoTocar ? { color: cores.primariaClara } : undefined}
-      style={({ pressed }) => [e.numero, pressed && e.numeroPressionado]}
+      style={e.numero}
     >
       <Icone nome={icone} cor="primaria" />
       <Texto variante="h2" cor="primaria">
@@ -206,7 +209,7 @@ function Numero({ valor, rotulo, icone, aoTocar }: NumeroProps) {
       <Texto variante="pequeno" cor="textoFraco" centro>
         {rotulo}
       </Texto>
-    </Pressable>
+    </Pressionavel>
   );
 }
 
@@ -237,6 +240,5 @@ const e = StyleSheet.create({
     borderRadius: raio.md,
     backgroundColor: cores.fundo,
   },
-  numeroPressionado: { backgroundColor: cores.primariaClara },
   acoes: { gap: espaco.sm },
 });

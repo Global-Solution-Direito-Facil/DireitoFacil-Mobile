@@ -73,3 +73,14 @@ export const entradaDeAviso = FadeIn.duration(DURACAO.estado)
 
 /** Sai mais rapido do que entrou. */
 export const saidaDeAviso = FadeOut.duration(DURACAO.saida).reduceMotion(ReduceMotion.System);
+
+/**
+ * Mola com um quique pequeno, so para momentos raros (um pedido aprovado).
+ * Amortecimento ~0,67 do critico: passa um pouco do ponto e assenta (bounce ~0,3).
+ */
+export const MOLA_CELEBRACAO = {
+  damping: 20,
+  stiffness: 220,
+  mass: 1,
+  reduceMotion: ReduceMotion.System,
+} as const;
