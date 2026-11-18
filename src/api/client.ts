@@ -89,6 +89,11 @@ api.interceptors.response.use(
     return resposta;
   },
   async (erro: AxiosError) => {
+    if (__DEV__) {
+      // Sem isto, o log so mostra sucesso e um erro de API vira so a mensagem da tela.
+      const corpo = JSON.stringify(erro.response?.data ?? {}).slice(0, 300);
+      console.log(`[API] x ${erro.response?.status ?? erro.code} ${erro.config?.url} ${corpo}`);
+    }
     /**
      * No login (e no cadastro), 401 quer dizer "e-mail ou senha invalidos",
      * nao "sua sessao caiu".

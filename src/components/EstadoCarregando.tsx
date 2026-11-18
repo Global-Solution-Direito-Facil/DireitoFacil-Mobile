@@ -13,14 +13,15 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { MENSAGEM_ACORDANDO, useDemorou } from '../hooks/useDemorou';
+import { MENSAGEM_DEMORA, useDemorou } from '../hooks/useDemorou';
 import { cores, espaco, tipografia } from '../lib/tema';
+import { Texto } from './Texto';
 
 export function EstadoCarregando({ mensagem = 'Carregando...' }: { mensagem?: string }) {
   const opacidade = useSharedValue(1);
-  // Passou de alguns segundos: quase sempre e o servidor acordando.
+  // Passou de alguns segundos: a mensagem da tela fica e ganha a explicacao embaixo.
   const demorou = useDemorou(true);
-  const texto = demorou ? MENSAGEM_ACORDANDO : mensagem;
+  const rotulo = demorou ? `${mensagem} ${MENSAGEM_DEMORA}` : mensagem;
 
   useEffect(() => {
     opacidade.set(
@@ -34,9 +35,14 @@ export function EstadoCarregando({ mensagem = 'Carregando...' }: { mensagem?: st
   const estiloAnimado = useAnimatedStyle(() => ({ opacity: opacidade.get() }));
 
   return (
-    <View style={e.container} accessibilityRole="progressbar" accessibilityLabel={texto}>
+    <View style={e.container} accessibilityRole="progressbar" accessibilityLabel={rotulo}>
       <ActivityIndicator size="large" color={cores.primaria} />
-      <Animated.Text style={[e.texto, estiloAnimado]}>{texto}</Animated.Text>
+      <Animated.Text style={[e.texto, estiloAnimado]}>{mensagem}</Animated.Text>
+      {demorou ? (
+        <Texto variante="pequeno" cor="textoFraco" centro style={e.demora}>
+          {MENSAGEM_DEMORA}
+        </Texto>
+      ) : null}
     </View>
   );
 }
@@ -51,4 +57,5 @@ const e = StyleSheet.create({
     backgroundColor: cores.fundo,
   },
   texto: { ...tipografia.corpo, color: cores.textoFraco, textAlign: 'center' },
+  demora: { maxWidth: 320 },
 });

@@ -133,7 +133,7 @@ Endereços publicados:
 - Java: https://direitofacil-java.onrender.com (rotas em `/api/v1`)
 - .NET: https://direitofacil-rm561378.azurewebsites.net (rotas em `/api`)
 
-O Render gratuito desliga a API Java quando ela fica parada, e a primeira chamada depois disso leva até 1 minuto. Por isso o timeout do Axios é de 70 segundos e, depois de alguns segundos esperando, o login e as telas de carregamento avisam que o servidor está acordando.
+O Render gratuito desliga a API Java quando ela fica parada, e a primeira chamada depois disso leva até 1 minuto. Por isso o timeout do Axios é de 70 segundos e, depois de alguns segundos esperando, o login e as telas de carregamento explicam a espera (servidor parado ou leitura da receita pela IA), sem trocar a mensagem da tela.
 
 ### Modo demonstração
 
