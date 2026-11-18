@@ -14,6 +14,7 @@ import Animated from 'react-native-reanimated';
 import { Aviso } from '../components/Aviso';
 import { Botao } from '../components/Botao';
 import { Cartao } from '../components/Cartao';
+import { CartaoNovidade } from '../components/CartaoNovidade';
 import { EstadoCarregando } from '../components/EstadoCarregando';
 import { EstadoErro } from '../components/EstadoErro';
 import { EstadoVazio } from '../components/EstadoVazio';
@@ -21,6 +22,7 @@ import { Icone, NomeIcone } from '../components/Icone';
 import { Tela } from '../components/Tela';
 import { Texto } from '../components/Texto';
 import { useAuth } from '../contexts/AuthContext';
+import { useAvisos } from '../contexts/AvisosContext';
 import { mensagemDoErro } from '../errors/AppError';
 import { useCasos } from '../hooks/useCasos';
 import { usePessoas } from '../hooks/usePessoas';
@@ -61,6 +63,7 @@ export function InicioScreen({ navigation }: Props) {
   const { usuario } = useAuth();
   const pessoas = usePessoas();
   const casos = useCasos();
+  const { novidades } = useAvisos();
 
   if (pessoas.isPending) return <EstadoCarregando mensagem="Carregando sua família..." />;
   if (pessoas.isError) {
@@ -105,6 +108,14 @@ export function InicioScreen({ navigation }: Props) {
           </Pressable>
         ) : null}
       </View>
+
+      {novidades.map((n) => (
+        <CartaoNovidade
+          key={n.envioId}
+          novidade={n}
+          aoAbrir={() => navigation.navigate('Direito', { id: n.casoId, nome: n.direito })}
+        />
+      ))}
 
       {casos.isError ? <Aviso tipo="alerta" texto={mensagemDoErro(casos.error)} /> : null}
 

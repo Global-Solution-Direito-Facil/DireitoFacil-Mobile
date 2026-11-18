@@ -22,7 +22,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["CAMERA", "READ_MEDIA_IMAGES"]
+      "permissions": ["CAMERA", "READ_MEDIA_IMAGES", "POST_NOTIFICATIONS"]
     },
     "plugins": [
       "expo-secure-store",
@@ -42,6 +42,13 @@
         {
           "cameraPermission": "Usamos a câmera para você fotografar o laudo, a receita ou um documento que decidir enviar.",
           "photosPermission": "Acessamos a galeria só para você escolher a foto de um documento."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notificacao.png",
+          "color": "#1F4E8C"
         }
       ]
     ]

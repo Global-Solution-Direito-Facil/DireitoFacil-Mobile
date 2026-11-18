@@ -32,6 +32,7 @@ import { EstadoCarregando } from '../components/EstadoCarregando';
 import { NomeIcone } from '../components/Icone';
 import { IconeAba } from '../components/IconeAba';
 import { useAuth } from '../contexts/AuthContext';
+import { AvisosProvider, useAvisos } from '../contexts/AvisosContext';
 import { cores, fontes } from '../lib/tema';
 import { AnaliseEnvioScreen } from '../screens/AnaliseEnvioScreen';
 import { CadastroScreen } from '../screens/CadastroScreen';
@@ -49,6 +50,7 @@ import { PessoaScreen } from '../screens/PessoaScreen';
 import { ReceitaScreen } from '../screens/ReceitaScreen';
 import { SobreScreen } from '../screens/SobreScreen';
 import { TrocarSenhaScreen } from '../screens/TrocarSenhaScreen';
+import { navegacaoCidadao } from './navegacaoRef';
 import {
   AuthStackParamList,
   CidadaoAbasParamList,
@@ -100,6 +102,8 @@ function aba(
 }
 
 function AbasCidadao() {
+  // O numero na aba Direitos: pedidos aprovados ou devolvidos que a pessoa ainda nao abriu.
+  const { novidades } = useAvisos();
   return (
     <CidadaoAbas.Navigator screenOptions={abas} backBehavior="firstRoute">
       <CidadaoAbas.Screen
@@ -110,7 +114,11 @@ function AbasCidadao() {
       <CidadaoAbas.Screen
         name="MeusDireitos"
         component={MeusDireitosScreen}
-        options={aba('Meus direitos', 'Direitos', 'scale-balance', 'scale-balance')}
+        options={{
+          ...aba('Meus direitos', 'Direitos', 'scale-balance', 'scale-balance'),
+          tabBarBadge: novidades.length > 0 ? novidades.length : undefined,
+          tabBarBadgeStyle: { backgroundColor: cores.perigo, fontFamily: fontes.textoForte },
+        }}
       />
       <CidadaoAbas.Screen
         name="Documentos"
@@ -199,54 +207,62 @@ export function RootNavigator() {
   }
 
   // ---- 3. Cidadao -------------------------------------------------------------
+  // O AvisosProvider fica por fora: o cartao do Inicio, o numero da aba e o
+  // toque na notificacao (que navega pela ref) dividem o mesmo estado.
   return (
-    <NavigationContainer>
-      <CidadaoStack.Navigator screenOptions={cabecalho}>
-        <CidadaoStack.Screen name="Abas" component={AbasCidadao} options={{ headerShown: false }} />
-        <CidadaoStack.Screen
-          name="Pessoa"
-          component={PessoaScreen}
-          options={({ route }) => ({ title: route.params.nome })}
-        />
-        <CidadaoStack.Screen
-          name="PessoaForm"
-          component={PessoaFormScreen}
-          options={({ route }) => ({
-            title: route.params?.id ? 'Editar familiar' : 'Novo familiar',
-            presentation: 'modal',
-          })}
-        />
-        <CidadaoStack.Screen
-          name="Direito"
-          component={DireitoScreen}
-          options={({ route }) => ({ title: route.params.nome })}
-        />
-        <CidadaoStack.Screen
-          name="NovoDocumento"
-          component={NovoDocumentoScreen}
-          options={{ title: 'Enviar documento', presentation: 'modal' }}
-        />
-        <CidadaoStack.Screen
-          name="PedirAnalise"
-          component={PedirAnaliseScreen}
-          options={{ title: 'Pedir análise', presentation: 'modal' }}
-        />
-        <CidadaoStack.Screen
-          name="Receita"
-          component={ReceitaScreen}
-          options={{ title: 'Minha receita' }}
-        />
-        <CidadaoStack.Screen
-          name="TrocarSenha"
-          component={TrocarSenhaScreen}
-          options={{ title: 'Trocar senha', presentation: 'modal' }}
-        />
-        <CidadaoStack.Screen
-          name="Sobre"
-          component={SobreScreen}
-          options={{ title: 'Sobre o app' }}
-        />
-      </CidadaoStack.Navigator>
-    </NavigationContainer>
+    <AvisosProvider>
+      <NavigationContainer ref={navegacaoCidadao}>
+        <CidadaoStack.Navigator screenOptions={cabecalho}>
+          <CidadaoStack.Screen
+            name="Abas"
+            component={AbasCidadao}
+            options={{ headerShown: false }}
+          />
+          <CidadaoStack.Screen
+            name="Pessoa"
+            component={PessoaScreen}
+            options={({ route }) => ({ title: route.params.nome })}
+          />
+          <CidadaoStack.Screen
+            name="PessoaForm"
+            component={PessoaFormScreen}
+            options={({ route }) => ({
+              title: route.params?.id ? 'Editar familiar' : 'Novo familiar',
+              presentation: 'modal',
+            })}
+          />
+          <CidadaoStack.Screen
+            name="Direito"
+            component={DireitoScreen}
+            options={({ route }) => ({ title: route.params.nome })}
+          />
+          <CidadaoStack.Screen
+            name="NovoDocumento"
+            component={NovoDocumentoScreen}
+            options={{ title: 'Enviar documento', presentation: 'modal' }}
+          />
+          <CidadaoStack.Screen
+            name="PedirAnalise"
+            component={PedirAnaliseScreen}
+            options={{ title: 'Pedir análise', presentation: 'modal' }}
+          />
+          <CidadaoStack.Screen
+            name="Receita"
+            component={ReceitaScreen}
+            options={{ title: 'Minha receita' }}
+          />
+          <CidadaoStack.Screen
+            name="TrocarSenha"
+            component={TrocarSenhaScreen}
+            options={{ title: 'Trocar senha', presentation: 'modal' }}
+          />
+          <CidadaoStack.Screen
+            name="Sobre"
+            component={SobreScreen}
+            options={{ title: 'Sobre o app' }}
+          />
+        </CidadaoStack.Navigator>
+      </NavigationContainer>
+    </AvisosProvider>
   );
 }

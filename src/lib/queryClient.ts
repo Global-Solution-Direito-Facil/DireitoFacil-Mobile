@@ -1,5 +1,6 @@
 /** Configuracao do TanStack Query. */
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, focusManager } from '@tanstack/react-query';
+import { AppState } from 'react-native';
 
 import { AppError } from '../errors/AppError';
 
@@ -22,4 +23,14 @@ export const queryClient = new QueryClient({
       },
     },
   },
+});
+
+/**
+ * No celular nao existe "foco da janela": quem diz que o app voltou para a
+ * frente e o AppState. Com isso, voltar ao app recarrega o que estiver velho
+ * (por exemplo, a lista de envios logo depois da decisao do gestor).
+ */
+focusManager.setEventListener((mudouFoco) => {
+  const escuta = AppState.addEventListener('change', (estado) => mudouFoco(estado === 'active'));
+  return () => escuta.remove();
 });

@@ -3,6 +3,7 @@
  * escrito pela IA com a fonte, e a analise do assistente social.
  */
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Aviso } from '../components/Aviso';
@@ -14,6 +15,7 @@ import { LinhaDoTempo } from '../components/LinhaDoTempo';
 import { Selo } from '../components/Selo';
 import { Tela } from '../components/Tela';
 import { Texto } from '../components/Texto';
+import { useAvisos } from '../contexts/AvisosContext';
 import { mensagemDoErro } from '../errors/AppError';
 import { useCaso } from '../hooks/useCasos';
 import { useMeusEnvios } from '../hooks/useEnvios';
@@ -27,6 +29,10 @@ type Props = NativeStackScreenProps<CidadaoStackParamList, 'Direito'>;
 export function DireitoScreen({ navigation, route }: Props) {
   const caso = useCaso(route.params.id);
   const envios = useMeusEnvios();
+  const { marcarVisto } = useAvisos();
+
+  // Abrir o pedido e ver a decisao: a novidade sai do Inicio e da aba.
+  useEffect(() => marcarVisto(route.params.id), [marcarVisto, route.params.id]);
 
   if (caso.isPending) return <EstadoCarregando />;
   if (caso.isError) {

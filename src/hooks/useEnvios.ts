@@ -20,8 +20,19 @@ export const chavesEnvios = {
   detalhe: (id: string) => ['envios', 'detalhe', id] as const,
 };
 
-export function useMeusEnvios() {
-  return useQuery({ queryKey: chavesEnvios.meus, queryFn: listarMeusEnvios });
+/**
+ * Envios do cidadao. Com `intervalo` (ms), a lista e reconsultada sozinha
+ * enquanto o app esta aberto ou em segundo plano: e assim que o AvisosContext percebe a decisao
+ * do assistente social. As telas usam a mesma chave e dividem o cache.
+ */
+export function useMeusEnvios(intervalo?: number) {
+  return useQuery({
+    queryKey: chavesEnvios.meus,
+    queryFn: listarMeusEnvios,
+    refetchInterval: intervalo,
+    // Continua com o app em segundo plano: e ai que a notificacao faz falta.
+    refetchIntervalInBackground: intervalo !== undefined,
+  });
 }
 
 export function useFila(status: StatusEnvio) {
