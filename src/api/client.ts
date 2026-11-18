@@ -142,7 +142,9 @@ function camposDoErro(corpo: CorpoErro | undefined): Record<string, string> {
 /**
  * A mensagem do servidor ganha da nossa (ele sabe que "ja existe conta com
  * este CPF"). A tabela abaixo e a rede de seguranca. Um 500 nunca mostra o
- * texto do servidor: pode conter detalhe interno.
+ * texto do servidor: pode conter detalhe interno. O 503 mostra: e um aviso
+ * pensado para a pessoa ("A leitura por IA falhou. Tente novamente em instantes.").
+ * Se o 503 vier do Render ou do Azure, sem a mensagem da API, vale o padrao.
  *
  * Ordem: do mais especifico para o mais geral.
  */
@@ -190,6 +192,9 @@ function traduzirErro(erro: AxiosError): AppError {
   } else if (status >= 400 && status < 500) {
     tipo = 'CLIENTE';
     mensagemPadrao = 'Alguns dados não estão certos. Confira e tente de novo.';
+  } else if (status === 503) {
+    tipo = 'SERVIDOR';
+    mensagemPadrao = 'O serviço está indisponível agora. Tente de novo em instantes.';
   } else if (status >= 500) {
     tipo = 'SERVIDOR';
     mensagemPadrao = 'O servidor está com problemas. Tente mais tarde.';
@@ -198,6 +203,7 @@ function traduzirErro(erro: AxiosError): AppError {
     mensagemPadrao = 'Algo deu errado. Tente novamente.';
   }
 
-  const mensagem = status < 500 && mensagemDaApi ? mensagemDaApi : mensagemPadrao;
+  const podeMostrarDaApi = status < 500 || status === 503;
+  const mensagem = podeMostrarDaApi && mensagemDaApi ? mensagemDaApi : mensagemPadrao;
   return new AppError({ tipo, mensagem, status, campos: camposDoErro(corpo) });
 }
