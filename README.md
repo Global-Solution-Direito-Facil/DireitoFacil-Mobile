@@ -34,6 +34,7 @@ O app segue a arquitetura e as bibliotecas do app de referência das aulas (`moc
 | Câmera e galeria   | `expo-image-picker`                                                                   |
 | Ícones             | `@expo/vector-icons` (Material Design Icons, o conjunto do próprio Expo)              |
 | Fontes             | `expo-font`, com os arquivos em `assets/fonts`                                        |
+| Notificação        | `expo-notifications` (notificação local, sem push e sem Firebase)                     |
 
 Expo SDK 58, a versão que o Expo Go atual abre.
 
@@ -140,6 +141,16 @@ Com `EXPO_PUBLIC_DATA_SOURCE=mock`, só o **adaptador** do Axios muda (`src/api/
 
 **Na entrega, o app roda com `EXPO_PUBLIC_DATA_SOURCE=api`**: os dados ficam nas APIs, não no aparelho.
 
+### Avisos dos pedidos
+
+Quando o assistente social aprova ou devolve um envio, a família fica sabendo sem push e sem servidor de notificação (`src/contexts/AvisosContext.tsx`):
+
+1. Com o app aberto ou em segundo plano, a lista de envios (`GET /api/envios`) é consultada de novo a cada minuto, e também quando o app volta para a frente.
+2. Um envio que chegou a **aprovado** ou **devolvido** dispara uma **notificação local** no celular. Tocar nela abre o pedido.
+3. Até a pessoa abrir o pedido, ele aparece como novidade: um cartão no Início e um número na aba Direitos.
+
+O que já foi visto e avisado fica no celular, por conta. Na primeira entrada, o app só anota o estado atual, para decisões antigas não virarem aviso. A notificação do sistema só funciona no APK: no Expo Go o módulo nativo não existe, e o app segue só com o cartão e o número da aba. Com o app totalmente fechado nada chega, porque isso exigiria push.
+
 ## Como rodar
 
 ### Pré-requisitos
@@ -222,7 +233,8 @@ Para a demonstração com as APIs publicadas, use a Ana (cidadã) e a Rafaela (g
 4. **Resultado possível.** Entre como `rita.barbosa@email.com` e abra o BPC: aparece "Pode ser que você tenha direito", com o motivo e o botão **Completar informação**.
 5. **Renda individual.** No cadastro da Rita, escolha "Não sei / prefiro não informar" e salve: o passe do idoso passa para "Pode ser que tenha direito".
 6. **Receita.** Em Minha receita, escolha o familiar e fotografe qualquer papel: a leitura de demonstração traz 4 remédios e o resultado mostra 2 de graça, 1 com dosagem diferente e 1 fora da lista.
-7. **`401` derruba a sessão.** Com a API real, expire o token e puxe uma lista: o app volta para o login sozinho, com aviso. Um `401` só da API .NET mostra erro, sem deslogar.
+7. **Aviso de decisão.** Entre como Ana, saia, entre como Rafaela e aprove o envio do Lucas. Volte como Ana: o Início mostra "Pedido aprovado" e a aba Direitos mostra 1. No APK, com a Ana logada e o app aberto, a notificação chega em até 1 minuto depois da decisão.
+8. **`401` derruba a sessão.** Com a API real, expire o token e puxe uma lista: o app volta para o login sozinho, com aviso. Um `401` só da API .NET mostra erro, sem deslogar.
 
 ## Publicação (Firebase App Distribution)
 
