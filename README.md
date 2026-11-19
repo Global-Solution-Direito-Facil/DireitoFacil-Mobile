@@ -21,9 +21,11 @@ Famílias de pessoas com autismo (TEA), com deficiência (PcD) e idosos de baixa
 
 ## Vídeo de demonstração
 
-[Assistir no YouTube](https://youtu.be/xBYRndzUo5E): o APK rodando no celular, ligado às APIs publicadas.
+[Assistir no YouTube](https://youtu.be/D15Zlaud8Q8): o APK rodando no celular, ligado às APIs publicadas.
 
 ## Acesso para testar
+
+**[Baixar o APK](https://expo.dev/artifacts/eas/DFRqad4Ixh5U8scyHOGPtXLeVwSBXZwkzScSGHzRQrw.apk)** (gerado pelo EAS Build a partir do commit `5fefaac`).
 
 O app já vem ligado às APIs publicadas. Basta instalar o APK e entrar com uma destas contas:
 
