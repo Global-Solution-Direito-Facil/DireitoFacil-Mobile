@@ -21,7 +21,7 @@ Famílias de pessoas com autismo (TEA), com deficiência (PcD) e idosos de baixa
 
 ## Vídeo de demonstração
 
-[Assistir no YouTube](https://youtu.be/D15Zlaud8Q8): o APK rodando no celular, ligado às APIs publicadas.
+[Assistir no YouTube](https://youtu.be/osG-JxOe25o): o APK rodando no celular, ligado às APIs publicadas.
 
 ## Acesso para testar
 
