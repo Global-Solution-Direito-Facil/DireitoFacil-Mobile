@@ -96,19 +96,6 @@ As telas principais ficam numa **barra de abas** embaixo: Início, Direitos, Doc
 
 **Receita (Farmácia Popular).** A pessoa escolhe de quem é a receita e a IA lê a foto. Antes da consulta, a pessoa confere e pode corrigir nome, princípio ativo e dosagem. O app registra a receita no familiar (`POST /receitas`), grava cada remédio em `/receitas/{id}/itens`, avisando se a pessoa corrigiu a leitura (`corrigido`), e lê o resultado em `GET /receitas/{id}`. O resultado tem três estados: **de graça**, **dosagem diferente da lista** e **fora da lista**, cada um com a orientação do banco. O app nunca sugere trocar de remédio ou de dosagem e sempre manda confirmar na farmácia credenciada.
 
-## Requisitos da disciplina
-
-| Requisito                                   | Onde está                                                                                                                                                                                                                                                        |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 6+ telas com navegação                      | `src/navigation/RootNavigator.tsx`                                                                                                                                                                                                                               |
-| CRUD via API, com erro, loaders e mensagens | Familiares: criar, ler, editar e excluir (`/api/v1/pessoas`, Java). Documentos: enviar, listar e apagar (`/api/documentos`, .NET). Envios: criar, submeter, aprovar e devolver (`/api/envios`, .NET). Camada própria em `src/api` + `src/services` + `src/hooks` |
-| Autenticação                                | `src/contexts/AuthContext.tsx`: cadastro, login, logout que apaga token, dados e cache, sessão que sobrevive a fechar o app, e `401` da API Java que derruba a sessão de qualquer tela                                                                           |
-| Rotas protegidas                            | Quatro caminhos no `RootNavigator`: lendo a sessão, sem sessão, cidadão e gestor. As telas de um papel não existem para o outro                                                                                                                                  |
-| Identidade visual                           | `src/lib/tema.ts` (cores, fontes, espaços), `assets/fonts` (Lexend e Atkinson Hyperlegible, licença OFL), ícone e ilustrações próprias em `assets/`                                                                                                              |
-| Arquitetura                                 | Pastas por responsabilidade (abaixo), ESLint + Prettier, TypeScript estrito e a regra de camadas no lint                                                                                                                                                         |
-| Publicação                                  | APK gerado do commit final (ver [Gerar o APK](#gerar-o-apk)) e tela "Sobre o app" com o hash do commit, calculado no build                                                                                                                                       |
-| Vídeo                                       | [Vídeo de demonstração](#vídeo-de-demonstração), até 5 minutos                                                                                                                                                                                                   |
-
 ## Arquitetura em camadas
 
 ```
